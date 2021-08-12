@@ -1,5 +1,19 @@
+If your rem.json file is too large, VS Code may not be able to prettify it. You can [use python](https://stackoverflow.com/questions/19875218/best-way-to-format-large-json-file-30-mb) instead to prettify it: `type rem.json | python -mjson.tool > pretty.json`
 
-* Rem's created separately for each Block Ref!! - `"i": "q"`
+# Pages that can be ignored
+
+* Personal folder is my main starting Rem with ID: `pAbgiAqZ45tLDzSpS`
+    * Use `subBlocks` property in this object to get list of child Documents (not Rem - my home page only has documents)
+* pages with contains in key is Auto-generated. Ignore these
+    ```JSON
+                "key": [
+                    "contains:",
+    ```
+* pages with ID `tEhuuggyZDow3LAvz` & `KYJAcN5YzpL9MZX6k` are automatic page in Personal folder
+
+# General Observations
+
+* If Rem's are created separately for each Block Ref, they follow this pattern!! - `"i": "q"`
     ```JSON
     "key": [
         {
@@ -13,8 +27,10 @@
                         {
                             "_id":
         ```
-        or `"key":[{"_id":"` in un-prettified version <br>
-        or RegEx match `\{"key":\[\{"_id":".*?","i":"q"\},""\]`
+        * or `"key":[{"_id":"` in un-prettified version <br>
+        * or [RegEx match](https://regex101.com/r/tL9OZ7/5/) 
+            * `\{"key":\[\{"_id":".*?","i":"q"\},""\].*?\}` in un-prettified version or 
+            * `(\{\s*"key":\s*\[\s*\{\s*"_id":\s*".*?",\s*"i":\s*"q"\s*\},\s*""\s*\])((.|\n)*?\})` in both versions
     * but these are valid Rem's
         ```JSON
             "key": [
@@ -26,3 +42,6 @@
                 " , but it is mostly used by  Linux users"
             ]
         ```
+
+* Any object containing `"rcre":` can be ignored - they are [Power-up Rems](https://www.redgregory.com/remnote-content/2020/11/1/a-list-of-remnotes-power-up-rems-and-what-they-do).
+    * RegEx to find them: `\{((.|\n)*?"rcre")((.|\n)*?\})`
