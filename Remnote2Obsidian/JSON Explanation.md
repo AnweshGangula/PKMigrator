@@ -13,7 +13,7 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
 
 # General Observations
 
-* If Rem's are created separately for each Block Ref, they follow this pattern!! - `"i": "q"`
+* If Rem's are created separately for each Block Ref, they follow this pattern!! - `"i": "q"` or `"rcrp":`
     ```JSON
     "key": [
         {
@@ -21,7 +21,7 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
             "_id": "p3xgRaGLQ3jEHJE98"
         }
     ```
-    * Find them using below search (includes the necessary namespaces if JSON is prettified)
+    * Find them using below search (includes the necessary whitespaces if JSON is prettified)
         ```JSON
                     "key": [
                         {
@@ -43,5 +43,16 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
             ]
         ```
 
+* Objects with blank array of key property can be ignored - `"key":[]`
 * Any object containing `"rcre":` can be ignored - they are [Power-up Rems](https://www.redgregory.com/remnote-content/2020/11/1/a-list-of-remnotes-power-up-rems-and-what-they-do).
     * RegEx to find them: `\{((.|\n)*?"rcre")((.|\n)*?\})`
+* Any object containing `"rcrp":` can be ignored
+    * these are actually metadata of Rem (Heading Level, color, status etc...) - These can be ignored**
+    * Understand of values:
+        * `r.s`: Rem Size (Heading level)
+        * `h.c`: highlight color
+        * `o.s`: original status
+        * `t.s`: Status: Unfinished
+        * `l.a`: Aliases
+* Objects with `"type": 2,` as a property are rems' with spaced repitition feature
+* Objects with `"type": 6` as property are either blank (`"key":[]`) or additional Block Ref Rem - Can be ignored
