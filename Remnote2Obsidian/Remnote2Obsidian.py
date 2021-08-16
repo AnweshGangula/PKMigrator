@@ -33,6 +33,10 @@ def expandChildren(pages, ID):
 
     return filteredChildren
 
+def findByID(ID):
+    key = [x["key"] for x in RemnoteDocs if x["_id"] in ID][0]
+    return key[0]
+
 
 filteredPages = expandChildren(RemnoteDocs, homepageID)
 
@@ -42,15 +46,30 @@ for file in filteredPages:
 
     child = expandChildren(RemnoteDocs, file["_id"])
     bullets = []
+    expandBullets = ""
     for x in child:
-        print({file["_id"], file["key"][0], x["_id"], str(x["key"])})
+        # print({file["_id"], file["key"][0], x["_id"], str(x["key"])})
 
+        text = ""
         if (len(x["key"])>1):
-            text = x["key"][0]["text"]
+            for i in x["key"]:
+                # print(isinstance(i, str))
+                if (isinstance(i, str)):
+                    text += i
+                elif ("text" in i):
+                    text += i["text"]
+                else:
+                    text += findByID(i["_id"])
+            # try:
+            #     text = x["key"][0]["text"]
+            # except Exception:
+            #     text = x["key"][0][r"\'text\'"]                
         else:
             text = x["key"][0]
         bullets.append("* " + str(text) + "\n")
+        expandBullets += "* " + str(text) + "\n"
     with open(filename, mode="wt", encoding="utf-8") as f:
-        f.write("# " + file["key"][0] + "\n" + str(str(bullets)))
+        print(bullets)
+        f.write("# " + file["key"][0] + "\n" + expandBullets)
 
 print(str(len(filteredPages)) + " files generated")
