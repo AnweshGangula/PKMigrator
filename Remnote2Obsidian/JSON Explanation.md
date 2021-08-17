@@ -56,10 +56,16 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
         * `l.a`: Aliases
 * Objects with `"type": 2,` as a property are rems' with spaced repitition feature
 * Objects with `"type": 6` as property are either blank (`"key":[]`) or additional Block Ref Rem - Can be ignored
-* Objects with `"i:: "o"` arer code blocks. They follow the below pattern:
+* Objects with `"i": "o"` arer code blocks. They follow the below pattern:
     ```
                 "key": [
                     {
                         "i": "o",
                         "language": "
     ```
+* Object with `"n": 1` as a property are Top-level Rem's
+* Object with `"i": "i"` as a property in `key` are images
+* Object with `"i": "m"` and `"b": true` as a property in `key` are bold text
+* Object with `"i": "m"` and `"url": ` as a property in `key` are URL links
+* Object with `"i": "m"` and `"h": ` as a property in `key` are Highlighted Text
+* Object with `"i": "m"` & `"q": true` as a property in `key` are inline code
