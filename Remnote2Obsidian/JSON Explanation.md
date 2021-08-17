@@ -69,3 +69,21 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
 * Object with `"i": "m"` and `"url": ` as a property in `key` are URL links
 * Object with `"i": "m"` and `"h": ` as a property in `key` are Highlighted Text
 * Object with `"i": "m"` & `"q": true` as a property in `key` are inline code
+
+# Power Query function to extract Text-From-Key
+```js
+let
+    Source = (keyColumn as any) => let
+        #"Expanded Text" = if Value.Type(keyColumn) = type text or keyColumn is null then keyColumn 
+            else if keyColumn[i]="q" and Record.HasFields(keyColumn, "_id") then "((" & keyColumn[_id] & "))" 
+            else if keyColumn[i]="o" then "```"& keyColumn[language] & "#(lf)" & keyColumn[text] & "#(lf)" & "```"
+            else if Record.HasFields(keyColumn, "q") and keyColumn[q] then "`" & keyColumn[text] & "`"
+            else if keyColumn[i]="m" and Record.HasFields(keyColumn, "url") then "[" & keyColumn[text] & "](" & keyColumn[url] & ")" 
+            else if keyColumn[i]="i" and Record.HasFields(keyColumn, "url") then "![" & keyColumn[url] & "]" 
+            else if Record.HasFields(keyColumn, "text") then keyColumn[text] 
+            else keyColumn[_id]
+    in
+        #"Expanded Text"
+in
+    Source
+```
