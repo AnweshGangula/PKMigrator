@@ -25,15 +25,10 @@ def main():
     mainFiles = expandChildren(homepageID)
 
     for file in mainFiles:
-        # print(file["key"][0])
         filename = os.path.join(Rem2ObsPath, file["key"][0] + ".md")
 
         child = expandChildren(file["_id"])
-        bullets = []
-        expandBullets = ""
-        for x in child:
-            bullets.append("* " + x + "\n")
-            expandBullets += "* " + x + "\n"
+        expandBullets = "\n".join(child)
         with open(filename, mode="wt", encoding="utf-8") as f:
             f.write("# " + file["key"][0] + "\n" + expandBullets)
         # print(f'{file["key"][0]}.md created')
@@ -48,31 +43,25 @@ def ignoreRem(dict):
         return False
 
 
-def expandChildren(ID):
+def expandChildren(ID, level=0):
     childID = [x["children"] for x in RemnoteDocs if x["_id"] == ID][0]
     filteredChildren = []
     text = ""
-    if(len(childID) == 0):
-        childDict = dictFromID(ID)
-        if not ignoreRem(childDict):
-            key = childDict["key"]
-            filteredChildren.append(textFromKey(key))
-            return filteredChildren
 
     childData = [x for x in RemnoteDocs if x["_id"] in childID]
-    # Rem with "contains:" in key are auto-generated. So those will be removed
     for x in childData:
         if not ignoreRem(x):
             if ID == homepageID:
                 filteredChildren.append(x)
             else:
-                text = textFromKey(x["key"])
+                prefix = ""
+                if level >= 1:
+                    prefix = "    " * level
+                prefix += "* "
+                text = prefix +  textFromKey(x["key"])
                 filteredChildren.append(text)
 
-                if(len(x["children"])>0):
-                    for child in x["children"]:
-                        # print({"child: " + child, "Parent: " +  x["_id"]})
-                        filteredChildren.extend(expandChildren(child))
+                filteredChildren.extend(expandChildren(x["_id"], level + 1 ))
 
     return filteredChildren
 
@@ -92,8 +81,10 @@ def textFromKey(key):
         if(isinstance(item, str)):
             text += item
         elif(item["i"] == "q" and "_id" in item):
-            newKey = dictFromID(item["_id"])["key"]
-            text += f'((^{textFromKey(newKey)}))'
+            newDict = dictFromID(item["_id"])
+            newKey = newDict["key"]
+            newID = newDict["_id"]
+            text += f'(({textFromKey(newKey)}^{newID}))'
         elif(item["i"] == "o"):
             text += f'```{item["language"]}\n{item["text"]}\n  ```'
         elif("q" in item and item["q"]):
