@@ -66,9 +66,13 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
 * Object with `"n": 1` as a property are Top-level Rem's
 * Object with `"i": "i"` as a property in `key` are images
 * Object with `"i": "m"` and `"b": true` as a property in `key` are bold text
+* Object with `"i": "m"` and `"x": true` as a property in `key` are LaTeX text
+* Object with `"i": "m"` and `"q": true` as a property in `key` are inline code
+* Object with `"i": "m"` and `"u": true` as a property in `key` are emptry text (typically appear before underscore(_))
 * Object with `"i": "m"` and `"url": ` as a property in `key` are URL links
 * Object with `"i": "m"` and `"h": ` as a property in `key` are Highlighted Text
-* Object with `"i": "m"` & `"q": true` as a property in `key` are inline code
+* Object with `"references": [\n` has been referenced in other blocks
+* Object with `"rcrt": "c"` is Custom CSS page - can be ignored
 
 # Power Query function to extract Text-From-Key
 ```js

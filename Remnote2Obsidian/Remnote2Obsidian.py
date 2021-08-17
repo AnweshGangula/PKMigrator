@@ -59,6 +59,10 @@ def expandChildren(ID, level=0):
                     prefix = "    " * level
                 prefix += "* "
                 text = prefix +  textFromKey(x["key"])
+                if "references" in x and not(x["references"] == []):
+                    text += f'^{x["_id"]}'
+                if "\n" in text:
+                    text = text.replace("\n", "\n" + prefix.replace("*", " "))
                 filteredChildren.append(text)
 
                 filteredChildren.extend(expandChildren(x["_id"], level + 1 ))
@@ -87,14 +91,20 @@ def textFromKey(key):
             text += f'(({textFromKey(newKey)}^{newID}))'
         elif(item["i"] == "o"):
             text += f'```{item["language"]}\n{item["text"]}\n  ```'
-        elif("q" in item and item["q"]):
-            text += f'`{item["text"]}`'
         elif(item["i"] == "m" and "url" in item):
             text += f'[{item["text"]}]({item["url"]})'
         elif(item["i"] == "i" and "url" in item):
             text += f'![{item["url"]}]'
+        elif("q" in item and item["q"]):
+            text += f'`{item["text"]}`'
+        elif("b" in item and item["b"]):
+            text += f'**{item["text"]}**'
+        elif("x" in item and item["x"]):
+            text += f'$${item["text"]}$$'
+        elif("u" in item and item["u"]) or ("h" in item):
+            text += item["text"]
         else:
-            pass
+            print("ERROR")
     return text
 
 
