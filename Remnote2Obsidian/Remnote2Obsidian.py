@@ -22,16 +22,21 @@ mainPageID = [x["children"] for x in RemnoteDocs if x["_id"] == homepageID][0]
 # print([[x["key"], x["_id"]] for x in RemnoteDocs if x["key"] == [homepageName]])
 
 def expandChildren(pages, ID):
-    blockID = [x["children"] for x in pages if x["_id"] == ID][0]
-    blockDict = [x for x in RemnoteDocs if x["_id"] in blockID]
-    # Rem with "contains:" in key are auto-generated. So those will be removed
+    childID = [x["children"] for x in pages if x["_id"] == ID][0]
     filteredChildren = []
     text = ""
-    for x in blockDict:
-        if not x["key"] == [] and not "contains:" in x["key"] and not "rcrp" in x:
-            if "type" in x and x["type"] == 6:
-                continue
-            elif ID == homepageID:
+    if(len(childID) == 0):
+        childDict = dictFromID(ID)
+        if not ignoreRem(childDict):
+            key = childDict["key"]
+            filteredChildren.append(textFromKey(key))
+            return filteredChildren
+
+    childData = [x for x in RemnoteDocs if x["_id"] in childID]
+    # Rem with "contains:" in key are auto-generated. So those will be removed
+    for x in childData:
+        if not ignoreRem(x):
+            if ID == homepageID:
                 filteredChildren.append(x)
             else:
                 text = textFromKey(x["key"])
@@ -45,14 +50,20 @@ def expandChildren(pages, ID):
     return filteredChildren
 
 
-def keyByID(ID):
-    key=[]
+def ignoreRem(dict):
+    if((dict["key"] == []) or ("contains:" in dict["key"]) or ("rcrp" in dict) or ("type" in dict and dict["type"] == 6)):
+            return True
+    else:
+        return False
+
+def dictFromID(ID):
+    dict=[]
     try:
-        key = [x["key"] for x in RemnoteDocs if x["_id"] in ID][0]
+        dict = [x for x in RemnoteDocs if x["_id"] in ID][0]
     except:
         # print(f"REM with ID: '{ID}' not found")
         pass
-    return key
+    return dict
 
 def textFromKey(key):
     text = ""
@@ -60,7 +71,8 @@ def textFromKey(key):
         if(isinstance(item, str)):
             text += item
         elif(item["i"] == "q" and "_id" in item):
-            text += f'((^{textFromKey(keyByID(item["_id"]))}))'
+            newKey = dictFromID(item["_id"])["key"]
+            text += f'((^{textFromKey(newKey)}))'
         elif(item["i"] == "o"):
             text += f'```{item["language"]}\n{item["text"]}\n```'
         elif("q" in item and item["q"]):
