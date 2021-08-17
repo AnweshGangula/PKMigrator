@@ -123,10 +123,10 @@ func (r *Record) ConvertHyperLinks() {
 
 	// Format Hyperlinks as per org-mode
 	// Reference: https://regex101.com/r/iaTu7H/1
-	regexL := `\[\s*(.+?)\s*\]\(\s*(.+?)\s*\)`
-	replacementL := `[[$2][$1]]`
-	reL := regexp.MustCompile(regexL)
-	r.Contents = reL.ReplaceAllString(r.Contents, replacementL)
+	regex := `\[\s*(.+?)\s*\]\(\s*(.+?)\s*\)`
+	replacement := `[[$2][$1]]`
+	re := regexp.MustCompile(regex)
+	r.Contents = re.ReplaceAllString(r.Contents, replacement)
 
 }
 
