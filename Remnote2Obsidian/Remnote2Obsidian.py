@@ -60,7 +60,7 @@ def expandChildren(ID, level=0):
                 prefix += "* "
                 text = prefix +  textFromKey(x["key"])
                 if "references" in x and not(x["references"] == []):
-                    text += f'^{x["_id"]}'
+                    text += f' ^{x["_id"].replace("_", "-")}'
                 if "\n" in text:
                     text = text.replace("\n", "\n" + prefix.replace("*", " "))
                 filteredChildren.append(text)
@@ -86,9 +86,8 @@ def textFromKey(key):
             text += item
         elif(item["i"] == "q" and "_id" in item):
             newDict = dictFromID(item["_id"])
-            newKey = newDict["key"]
             newID = newDict["_id"]
-            text += f'(({textFromKey(newKey)}^{newID}))'
+            text += f'![[{filenameFromID(newID)}#^{newID}]]'
         elif(item["i"] == "o"):
             text += f'```{item["language"]}\n{item["text"]}\n  ```'
         elif(item["i"] == "m" and "url" in item):
@@ -101,12 +100,24 @@ def textFromKey(key):
             text += f'**{item["text"]}**'
         elif("x" in item and item["x"]):
             text += f'$${item["text"]}$$'
-        elif("u" in item and item["u"]) or ("h" in item):
+        elif("u" in item and item["u"]):
             text += item["text"]
         else:
             print("ERROR")
     return text
 
+
+def filenameFromID(ID):
+    fileName = ""
+    dict = dictFromID(ID)
+    if(ID in mainPageID or "parent" not in dict or dict["parent"] == None):
+        fileName =  textFromKey(dictFromID(ID)["key"])
+    elif dict["parent"] in mainPageID:
+        fileName = textFromKey(dictFromID(dict["parent"])["key"])
+    else:
+        fileName = filenameFromID(dict["parent"])
+
+    return fileName
 
 if __name__ == '__main__':
     main()
