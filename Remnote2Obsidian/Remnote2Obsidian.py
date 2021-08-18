@@ -58,7 +58,7 @@ def expandChildren(ID, level=0):
                 if level >= 1:
                     prefix = "    " * level
                 prefix += "* "
-                text = prefix +  textFromKey(x["key"])
+                text = prefix +  textFromID(x["_id"])
                 if "references" in x and not(x["references"] == []):
                     text += f' ^{x["_id"].replace("_", "-")}'
                 if "\n" in text:
@@ -79,7 +79,8 @@ def dictFromID(ID):
         pass
     return dict
 
-def textFromKey(key):
+def textFromID(ID):
+    key = dictFromID(ID)["key"]
     text = ""
     for item in key:
         if(isinstance(item, str)):
@@ -90,20 +91,24 @@ def textFromKey(key):
             text += f'![[{filenameFromID(newID)}#^{newID}]]'
         elif(item["i"] == "o"):
             text += f'```{item["language"]}\n{item["text"]}\n  ```'
-        elif(item["i"] == "m" and "url" in item):
-            text += f'[{item["text"]}]({item["url"]})'
+        elif(item["i"] == "m"):
+            if ("url" in item):
+                text += f'[{item["text"]}]({item["url"]})'
+            elif("q" in item and item["q"]):
+                text += f'`{item["text"]}`'
+            elif("b" in item and item["b"]):
+                if("h" in item and item["h"]):
+                    text = f'**=={item["text"]}==**'
+                else:
+                    text += f'**{item["text"]}**'
+            elif("x" in item and item["x"]):
+                text = f'$${item["text"]}$$'
+            elif("u" in item and item["u"]):
+                text += item["text"]
         elif(item["i"] == "i" and "url" in item):
             text += f'![{item["url"]}]'
-        elif("q" in item and item["q"]):
-            text += f'`{item["text"]}`'
-        elif("b" in item and item["b"]):
-            text += f'**{item["text"]}**'
-        elif("x" in item and item["x"]):
-            text += f'$${item["text"]}$$'
-        elif("u" in item and item["u"]):
-            text += item["text"]
         else:
-            print("ERROR")
+            print("ERROR at textFromID function for ID: " + ID)
     return text
 
 
@@ -111,9 +116,9 @@ def filenameFromID(ID):
     fileName = ""
     dict = dictFromID(ID)
     if(ID in mainPageID or "parent" not in dict or dict["parent"] == None):
-        fileName =  textFromKey(dictFromID(ID)["key"])
+        fileName =  textFromID(ID)
     elif dict["parent"] in mainPageID:
-        fileName = textFromKey(dictFromID(dict["parent"])["key"])
+        fileName = textFromID(dict["parent"])
     else:
         fileName = filenameFromID(dict["parent"])
 
