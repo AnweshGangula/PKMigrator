@@ -93,16 +93,18 @@ def textFromID(ID):
             else:
                 text += f'![[{filenameFromID(newID)}#^{newID}]]'
         elif(item["i"] == "o"):
-            text += f'```{item["language"]}\n{item["text"].strip()}\n  ```'
-        elif(item["i"] == "m" and item["text"].strip() != ""):
-            currText = item["text"].strip()
+            text += f'```{item["language"]}\n{item["text"]}\n  ```'
+        elif(item["i"] == "m"):
+            currText = item["text"]
             if ("url" in item):
                 text += f'[{currText}]({item["url"]})'
+            if (currText.strip() == ""):
+                text += currText
             elif("q" in item and item["q"]):
                 text += f'`{currText}`'
             elif("b" in item and item["b"]):
                 if("h" in item and item["h"]):
-                    text += f'**=={currText}==**'
+                    text += f'==**{currText}**=='
                 else:
                     text += f'**{currText}**'
             elif("x" in item and item["x"]):
