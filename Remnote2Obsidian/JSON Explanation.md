@@ -1,6 +1,16 @@
-If your rem.json file is too large, VS Code may not be able to prettify it. You can [use python](https://stackoverflow.com/questions/19875218/best-way-to-format-large-json-file-30-mb) instead to prettify it: `type rem.json | python -mjson.tool > pretty.json`
+# rem.json Observations
 
-# Pages that can be ignored
+If your rem.json file is too large, VS Code may not be able to prettify it. You can [use python](https://stackoverflow.com/questions/19875218/best-way-to-format-large-json-file-30-mb) instead to prettify it: `type rem.json | python -mjson.tool > pretty.json`
+___
+
+> ## TODO
+> * [ ] Automatically look for folders with `"forceIsFolder": true` and `"parent": null` properties
+>   * [ ] differentiate between bullet and file inside a folder REM (blocks vs children!!)
+> * [ ] Exclude unnecessary Power-Up Rem's
+> * [x] Indent newlines in code-block and remove bullets
+> * [x] Add Block-ref's and page ref's
+
+## Pages that can be ignored
 
 * Personal folder is my main starting Rem with ID: `pAbgiAqZ45tLDzSpS`
     * Use `subBlocks` property in this object to get list of child Documents (not Rem - my home page only has documents)
@@ -11,7 +21,7 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
     ```
 * pages with ID `tEhuuggyZDow3LAvz` & `KYJAcN5YzpL9MZX6k` are automatic page in Personal folder
 
-# General Observations
+## General Observations
 
 * If Rem's are created separately for each Block Ref, they follow this pattern!! - `"i": "q"` or `"rcrp":`
     ```JSON
@@ -44,8 +54,9 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
         ```
 
 * Objects with blank array of key property can be ignored - `"key":[]`
-* Any object containing `"rcre":` can be ignored - they are [Power-up Rems](https://www.redgregory.com/remnote-content/2020/11/1/a-list-of-remnotes-power-up-rems-and-what-they-do).
+* Any object containing `"rcre":` or `"rcrt": ` can be ignored - they are [Power-up Rems](https://www.redgregory.com/remnote-content/2020/11/1/a-list-of-remnotes-power-up-rems-and-what-they-do).
     * RegEx to find them: `\{((.|\n)*?"rcre")((.|\n)*?\})`
+    * Object with `"rcrt": "c"` is **Custom CSS**
 * Any object containing `"rcrp":` can be ignored
     * these are actually metadata of Rem (Heading Level, color, status etc...) - These can be ignored**
     * Understand of values:
@@ -64,6 +75,8 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
                         "language": "
     ```
 * Object with `"n": 1` as a property are Top-level Rem's
+* Object with `"forceIsFolder": true` as a property are folders. 
+    * objects with `"parent": null` and `"forceIsFolder": true` can be used for initiation loop.
 * Object with `"i": "i"` as a property in `key` are images
 * Object with `"i": "m"` and `"b": true` as a property in `key` are bold text
 * Object with `"i": "m"` and `"x": true` as a property in `key` are LaTeX text
@@ -72,7 +85,8 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
 * Object with `"i": "m"` and `"url": ` as a property in `key` are URL links
 * Object with `"i": "m"` and `"h": ` as a property in `key` are Highlighted Text
 * Object with `"references": [\n` has been referenced in other blocks
-* Object with `"rcrt": "c"` is Custom CSS page - can be ignored
+
+* `typeParents: ` property is a list of Tags added to the REM
 
 # Power Query function to extract Text-From-Key
 ```js
