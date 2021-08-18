@@ -75,8 +75,8 @@ def dictFromID(ID):
     try:
         dict = [x for x in RemnoteDocs if x["_id"] in ID][0]
     except:
-        # print(f"REM with ID: '{ID}' not found")
-        pass
+        print(f"REM with ID: '{ID}' not found")
+        # pass
     return dict
 
 def textFromID(ID):
@@ -88,25 +88,29 @@ def textFromID(ID):
         elif(item["i"] == "q" and "_id" in item):
             newDict = dictFromID(item["_id"])
             newID = newDict["_id"]
-            text += f'![[{filenameFromID(newID)}#^{newID}]]'
+            if newID in mainPageID:
+                text += f'[[{filenameFromID(newID)}]]'
+            else:
+                text += f'![[{filenameFromID(newID)}#^{newID}]]'
         elif(item["i"] == "o"):
-            text += f'```{item["language"]}\n{item["text"]}\n  ```'
-        elif(item["i"] == "m"):
+            text += f'```{item["language"]}\n{item["text"].strip()}\n  ```'
+        elif(item["i"] == "m" and item["text"].strip() != ""):
+            currText = item["text"].strip()
             if ("url" in item):
-                text += f'[{item["text"]}]({item["url"]})'
+                text += f'[{currText}]({item["url"]})'
             elif("q" in item and item["q"]):
-                text += f'`{item["text"]}`'
+                text += f'`{currText}`'
             elif("b" in item and item["b"]):
                 if("h" in item and item["h"]):
-                    text = f'**=={item["text"]}==**'
+                    text += f'**=={currText}==**'
                 else:
-                    text += f'**{item["text"]}**'
+                    text += f'**{currText}**'
             elif("x" in item and item["x"]):
-                text = f'$${item["text"]}$$'
+                text = f'$${currText}$$'
             elif("u" in item and item["u"]):
-                text += item["text"]
+                text += currText
         elif(item["i"] == "i" and "url" in item):
-            text += f'![{item["url"]}]'
+            text += f'![]({item["url"]})'
         else:
             print("ERROR at textFromID function for ID: " + ID)
     return text
