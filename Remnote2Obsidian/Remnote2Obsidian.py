@@ -9,6 +9,7 @@ jsonFile = "rem.json"
 # jsonPath = sys.argv[1]
 # homepageName = "Personal"
 homepageID = "pAbgiAqZ45tLDzSpS" # you can find this in the URL (eg: https://www.remnote.io/document/HrxrQbMC3fXbBpWPB)
+dailyDocsID = "dyqaWLHtstN4iqAYk"
 includeTopLevelRem = True
 includeCustomCSS = True
 folderName = "Rem2Obs"
@@ -20,6 +21,11 @@ os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
 RemnoteDocs = remnoteJSON["docs"]
+
+allParentRem = [x for x in RemnoteDocs if "n" in x and  x["n"] == 1]
+allFolders = [x for x in RemnoteDocs if "forceIsFolder" in x and  x["forceIsFolder"]]
+topFolders = [x for x in allFolders if x["parent"] == None]
+
 mainPageID = [x["children"] for x in RemnoteDocs if x["_id"] == homepageID][0]
 # print([[x["key"], x["_id"]] for x in RemnoteDocs if x["key"] == [homepageName]])
 
@@ -29,27 +35,31 @@ if includeTopLevelRem:
     mainPageID = mainPageID + list(set(parentRem) - set(mainPageID))
 
 def main():
-    parentFiles = [x for x in mainPageID if not ignoreRem(x)]
-    mainFiles = expandChildren(homepageID)
 
+    created = []
     notCreated = []
-    for file in parentFiles:
-        filename = textFromID(file)
-        # filename = re.sub('[^\w\-_\. ]', '_', filename)
-        filePath = os.path.join(Rem2ObsPath, filename + ".md")
+    for folder in topFolders:
+        for file in folder["children"]:
+            folderPath = os.path.join(Rem2ObsPath, folder["key"][0])
+            os.makedirs(folderPath, exist_ok=True)
+            filename = textFromID(file)
+            # filename = re.sub('[^\w\-_\. ]', '_', filename)
+            filePath = os.path.join(folderPath, filename + ".md")
 
-        child = expandChildren(file)
-        expandBullets = "\n".join(child)
-        try:
-            with open(filePath, mode="wt", encoding="utf-8") as f:
-                f.write("# " + filename + "\n" + expandBullets)
-            # print(f'{file["key"][0]}.md created')
-        except:
-            notCreated.append("ID: " + file + ",  Name: " + filename)
-            print("\ncannot create file with name: " + filename)
+            try:
+                with open(filePath, mode="wt", encoding="utf-8") as f:
+                    child = expandChildren(file)
+                    expandBullets = "\n".join(child)
 
-    print("\n" + str(len(parentFiles) - len(notCreated)) + " files generated")
-    print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n ".join(notCreated)) if len(notCreated)>0 else None
+                    f.write("# " + filename + "\n" + expandBullets)
+                # print(f'{file["key"][0]}.md created')
+                created.append("ID: " + file + ",  Name: " + filename)
+            except:
+                notCreated.append("ID: " + file + ",  Name: " + filename)
+                print("\ncannot create file with name: " + filename)
+
+    print("\n" + str(len(created)) + " files generated")
+    print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
 
 def ignoreRem(ID):
@@ -57,6 +67,8 @@ def ignoreRem(ID):
     if((dict["key"] == []) 
     or ("contains:" in dict["key"]) 
     or ("rcrp" in dict) 
+    or ("rcrs" in dict) 
+    or ("rcrt" in dict and dict["rcrt"] != "c")
     or ("type" in dict and dict["type"] == 6)
     ):
         return True
