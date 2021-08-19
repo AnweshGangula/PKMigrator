@@ -16,7 +16,7 @@ folderName = "Rem2Obs"
 # ---------------------------------------------------------------
 
 jsonPath = os.path.join(dir_path, jsonFile)
-Rem2ObsPath = os.path.join(dir_path, folderName)
+Rem2ObsPath = os.path.join(os.path.dirname(jsonPath), folderName)
 os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
@@ -26,20 +26,17 @@ allParentRem = [x for x in RemnoteDocs if "n" in x and  x["n"] == 1]
 allFolders = [x for x in RemnoteDocs if "forceIsFolder" in x and  x["forceIsFolder"]]
 topFolders = [x for x in allFolders if x["parent"] == None]
 
-mainPageID = [x["children"] for x in RemnoteDocs if x["_id"] == homepageID][0]
-# print([[x["key"], x["_id"]] for x in RemnoteDocs if x["key"] == [homepageName]])
-
-if includeTopLevelRem:
-    parentRem = [x["_id"] for x in RemnoteDocs if "parent" in x and x["parent"] == None]
-    # print(parentRem)
-    mainPageID = mainPageID + list(set(parentRem) - set(mainPageID))
+allDocs = [x["children"] for x in topFolders]
+allDocID = [doc for childList in allDocs for doc in childList]
 
 def main():
-
     created = []
     notCreated = []
+    topFolders.append(dictFromID(dailyDocsID))
     for folder in topFolders:
         for file in folder["children"]:
+            if ignoreRem(file):
+                continue
             folderPath = os.path.join(Rem2ObsPath, folder["key"][0])
             os.makedirs(folderPath, exist_ok=True)
             filename = textFromID(file)
@@ -54,7 +51,8 @@ def main():
                     f.write("# " + filename + "\n" + expandBullets)
                 # print(f'{file["key"][0]}.md created')
                 created.append("ID: " + file + ",  Name: " + filename)
-            except:
+            except Exception as e:
+                print(e)
                 notCreated.append("ID: " + file + ",  Name: " + filename)
                 print("\ncannot create file with name: " + filename)
 
@@ -123,7 +121,7 @@ def textFromID(ID):
         elif(item["i"] == "q" and "_id" in item):
             newDict = dictFromID(item["_id"])
             newID = newDict["_id"]
-            if newID in mainPageID:
+            if newID in allDocID:
                 text += f'[[{parentFromID(newID)}]]'
             else:
                 text += f'![[{parentFromID(newID)}#^{newID}]]'
@@ -156,9 +154,9 @@ def textFromID(ID):
 def parentFromID(ID):
     fileName = ""
     dict = dictFromID(ID)
-    if(ID in mainPageID or "parent" not in dict or dict["parent"] == None):
+    if(ID in allDocID or ("parent" in dict and dict["parent"] == None)):
         fileName =  textFromID(ID)
-    elif dict["parent"] in mainPageID:
+    elif dict["parent"] in allDocID:
         fileName = textFromID(dict["parent"])
     else:
         fileName = parentFromID(dict["parent"])
