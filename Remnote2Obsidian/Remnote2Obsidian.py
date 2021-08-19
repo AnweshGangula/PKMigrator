@@ -29,10 +29,10 @@ if includeTopLevelRem:
     mainPageID = mainPageID + list(set(parentRem) - set(mainPageID))
 
 def main():
-    parentFiles = [x for x in mainPageID if not ignoreRem(dictFromID(x))]
+    parentFiles = [x for x in mainPageID if not ignoreRem(x)]
     mainFiles = expandChildren(homepageID)
 
-    notCreated = 0
+    notCreated = []
     for file in parentFiles:
         filename = textFromID(file)
         # filename = re.sub('[^\w\-_\. ]', '_', filename)
@@ -45,14 +45,15 @@ def main():
                 f.write("# " + filename + "\n" + expandBullets)
             # print(f'{file["key"][0]}.md created')
         except:
-            notCreated += 1
+            notCreated.append("ID: " + file + ",  Name: " + filename)
             print("\ncannot create file with name: " + filename)
 
-    print("\n" + str(len(parentFiles) - notCreated) + " files generated")
-    print(str(notCreated) + " file/s could not be generated") if notCreated>0 else None
+    print("\n" + str(len(parentFiles) - len(notCreated)) + " files generated")
+    print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n ".join(notCreated)) if len(notCreated)>0 else None
 
 
-def ignoreRem(dict):
+def ignoreRem(ID):
+    dict = dictFromID(ID)
     if((dict["key"] == []) 
     or ("contains:" in dict["key"]) 
     or ("rcrp" in dict) 
@@ -70,7 +71,7 @@ def expandChildren(ID, level=0):
 
     childData = [x for x in RemnoteDocs if x["_id"] in childID]
     for x in childData:
-        if not ignoreRem(x):
+        if not ignoreRem(x["_id"]):
             if(ID == homepageID) or ("parent" in x and x["parent"] == None):
                 # filteredChildren.append(x)
                 pass
