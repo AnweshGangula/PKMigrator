@@ -23,41 +23,63 @@ remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="igno
 RemnoteDocs = remnoteJSON["docs"]
 
 allParentRem = [x for x in RemnoteDocs if "n" in x and  x["n"] == 1]
-allFolders = [x for x in RemnoteDocs if "forceIsFolder" in x and  x["forceIsFolder"]]
-topFolders = [x for x in allFolders if x["parent"] == None]
+# allFolders = [x for x in RemnoteDocs if "forceIsFolder" in x and  x["forceIsFolder"]]
+# topFolders = [x for x in allFolders if x["parent"] == None]
 
-allDocs = [x["children"] for x in topFolders]
-allDocID = [doc for childList in allDocs for doc in childList]
 
+def getAllDocs(RemList):
+    IDlist = []
+    for rem in RemList:
+        IDlist.append(rem["_id"])
+        if "forceIsFolder" in rem and  rem["forceIsFolder"]:
+            childRem = []
+            for child in rem["children"]:
+                dict = [x for x in RemnoteDocs if x["_id"] == child][0] 
+                childRem.append(dict)
+            IDlist.extend(getAllDocs(childRem))
+    return IDlist
+
+allDocID = getAllDocs(allParentRem)
+# allDocID is used in textFromID function
+
+created = []
+notCreated = []
 def main():
-    created = []
-    notCreated = []
-    topFolders.append(dictFromID(dailyDocsID))
-    for folder in topFolders:
-        for file in folder["children"]:
-            if ignoreRem(file):
-                continue
-            folderPath = os.path.join(Rem2ObsPath, folder["key"][0])
-            os.makedirs(folderPath, exist_ok=True)
-            filename = textFromID(file)
-            # filename = re.sub('[^\w\-_\. ]', '_', filename)
-            filePath = os.path.join(folderPath, filename + ".md")
-
-            try:
-                with open(filePath, mode="wt", encoding="utf-8") as f:
-                    child = expandChildren(file)
-                    expandBullets = "\n".join(child)
-
-                    f.write("# " + filename + "\n" + expandBullets)
-                # print(f'{file["key"][0]}.md created')
-                created.append("ID: " + file + ",  Name: " + filename)
-            except Exception as e:
-                print(e)
-                notCreated.append("ID: " + file + ",  Name: " + filename)
-                print("\ncannot create file with name: " + filename)
+    for dict in allParentRem:
+        createFile(dict["_id"], Rem2ObsPath)
 
     print("\n" + str(len(created)) + " files generated")
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
+
+
+def createFile(remID, remFilePath):
+    # this is recursive function, so cannot be moved directly to main() function
+    if ignoreRem(remID):
+        return
+    remText = textFromID(remID)
+    remDict = dictFromID(remID)
+    if "forceIsFolder" in remDict and remDict["forceIsFolder"]:
+            newFilePath = os.path.join(remFilePath, remText)
+            for child in remDict["children"]:
+                createFile(child, newFilePath)
+    else:
+        os.makedirs(remFilePath, exist_ok=True)
+        filename = remText
+        # filename = re.sub('[^\w\-_\. ]', '_', filename)
+        filePath = os.path.join(remFilePath, filename + ".md")
+
+        try:
+            with open(filePath, mode="wt", encoding="utf-8") as f:
+                child = expandChildren(remID)
+                expandBullets = "\n".join(child)
+
+                f.write("# " + filename + "\n" + expandBullets)
+            # print(f'{remText}.md created')
+            created.append("ID: " + remID + ",  Name: " + filename)
+        except:
+            notCreated.append("ID: " + remID + ",  Name: " + filename)
+            print("\ncannot create file with ID: " + remID + ", Name: "+ filename )
+    
 
 
 def ignoreRem(ID):
@@ -106,7 +128,7 @@ def expandChildren(ID, level=0):
 def dictFromID(ID):
     dict=[]
     try:
-        dict = [x for x in RemnoteDocs if x["_id"] in ID][0]
+        dict = [x for x in RemnoteDocs if x["_id"] == ID][0]
     except:
         print(f"REM with ID: '{ID}' not found")
         # pass
