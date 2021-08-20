@@ -5,7 +5,8 @@ ___
 
 > ## TODO
 > * [ ] Block Ref in folders need to include folder name (eg: `[[Folder/file#^blockID]]`)
-> * [ ] Tagged REM are not referenced anywhere - convert them to Block Ref's - Example: **Essential PC App**
+> * [x] Tagged REM are not referenced anywhere - convert them to Block Ref's - Example: **Essential PC App**
+>    * `"typeParents": [` is used to identify this
 > * [ ] Remove unnecessary files from my personal Remnote
 > * [ ] add Dailypage folder and include files 
 > * [ ] optionally convert Custom CSS REM to md file
@@ -97,6 +98,7 @@ ___
 * Object with `"i": "m"` and `"h": ` as a property in `key` are Highlighted Text
 * Object with `"references": [\n` has been referenced in other blocks
 * crt object of a object has metadata of REM - like Heading, color etc... `"crt": {`
+* Object with non empty `""typeParents": [` have hashtags in them
 
 * `typeParents: ` property is a list of Tags added to the REM
 

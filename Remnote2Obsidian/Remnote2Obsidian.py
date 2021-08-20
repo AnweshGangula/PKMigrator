@@ -89,21 +89,24 @@ def createFile(remID, remFilePath):
                 f.write("# " + filename + "\n" + expandBullets)
             # print(f'{remText}.md created')
             created.append("ID: " + remID + ",  Name: " + filename)
-        except:
+        except Exception as e:
+            print(e)
             notCreated.append("ID: " + remID + ",  Name: " + filename)
             # print("\ncannot create file with ID: " + remID + ", Name: "+ filename + "\n")
     
 
 
 def ignoreRem(ID):
+    # TODO: add more ignore ID's
+    ignoreID = ["9onq37x6PbsFxvRqu", "6sz2MJeFLZoTRQofZ"]
     dict = dictFromID(ID)
-    if((dict["key"] == []) 
+    if(dict == []
+    or dict["key"] == [] 
     or ("contains:" in dict["key"]) 
     or ("rcrp" in dict) 
     or ("rcrs" in dict) 
     or ("rcrt" in dict and dict["rcrt"] != "c")
-    or ("type" in dict and dict["type"] == 6)
-    ):
+    or ("type" in dict and dict["type"] == 6)):
         return True
     else:
         return False
@@ -142,9 +145,10 @@ def dictFromID(ID):
     dict=[]
     try:
         dict = [x for x in RemnoteDocs if x["_id"] == ID][0]
-    except:
-        print(f"REM with ID: '{ID}' not found")
-        # pass
+    except Exception as e:
+        # print(e)
+        # print(f"REM with ID: '{ID}' not found")
+        pass
     return dict
 
 def textFromID(ID):
@@ -183,6 +187,22 @@ def textFromID(ID):
             text += f'![]({item["url"]})'
         else:
             print("ERROR at textFromID function for ID: " + ID)
+
+    text += addTags(ID)
+    return text
+
+
+def addTags(ID):
+    text = ""
+    dict = dictFromID(ID)
+    if (("typeParents" in dict and len(dict["typeParents"])>0)
+        and not ID in allDocID
+        and not("forceIsFolder" in dict and  dict["forceIsFolder"])
+        ):
+        for x in dict["typeParents"]:
+            if not ignoreRem(x):
+                text += f' #{textFromID(x).strip().replace(" ", "_")} '
+        
     return text
 
 
