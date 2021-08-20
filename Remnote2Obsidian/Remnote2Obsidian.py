@@ -1,7 +1,14 @@
 # terminal code: "cd Remnote2Obsidian && python Remnote2Obsidian.py"
 
-import sys, os, json, re
+# print("Python execution started")
+import sys, os, json, datetime, re
 
+# Import modules from current project:
+from progressBar import printProgressBar 
+
+# Custom Package installation
+
+start_time = datetime.datetime.now()
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # user-input variables: ----------------------------------------
@@ -45,9 +52,15 @@ allDocID = getAllDocs(allParentRem)
 created = []
 notCreated = []
 def main():
+    printProgressBar(0, len(allParentRem), prefix = 'Progress:', suffix = 'Complete', length = 50)
+    i=0
     for dict in allParentRem:
+        i += 1
+        printProgressBar(i, len(allParentRem), prefix = 'Progress:', suffix = 'Complete', length = 50)
         createFile(dict["_id"], Rem2ObsPath)
 
+    timetaken = str(datetime.datetime.now() - start_time)
+    print(f"\nTime Taken to Process PDF: {timetaken}")
     print("\n" + str(len(created)) + " files generated")
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
@@ -78,7 +91,7 @@ def createFile(remID, remFilePath):
             created.append("ID: " + remID + ",  Name: " + filename)
         except:
             notCreated.append("ID: " + remID + ",  Name: " + filename)
-            print("\ncannot create file with ID: " + remID + ", Name: "+ filename )
+            # print("\ncannot create file with ID: " + remID + ", Name: "+ filename + "\n")
     
 
 
