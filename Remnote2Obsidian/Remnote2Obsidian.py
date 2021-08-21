@@ -7,6 +7,7 @@ import sys, os, json, datetime, re
 from progressBar import printProgressBar 
 
 # Custom Package installation
+from dateutil.parser import parse as dateParse
 
 start_time = datetime.datetime.now()
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -17,9 +18,12 @@ jsonFile = "rem.json"
 # homepageName = "Personal"
 homepageID = "pAbgiAqZ45tLDzSpS" # you can find this in the URL (eg: https://www.remnote.io/document/HrxrQbMC3fXbBpWPB)
 dailyDocsID = "dyqaWLHtstN4iqAYk"
+daildDocsFolder = "Daily Documents"
 includeTopLevelRem = True
 includeCustomCSS = True
 folderName = "Rem2Obs"
+
+re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
 # ---------------------------------------------------------------
 
 jsonPath = os.path.join(dir_path, jsonFile)
@@ -29,9 +33,20 @@ os.makedirs(Rem2ObsPath, exist_ok=True)
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
 RemnoteDocs = remnoteJSON["docs"]
 
-allParentRem = [x for x in RemnoteDocs if "n" in x and  x["n"] == 1]
-# allFolders = [x for x in RemnoteDocs if "forceIsFolder" in x and  x["forceIsFolder"]]
-# topFolders = [x for x in allFolders if x["parent"] == None]
+allParentRem = []
+# allFolders = []
+# topFolders = []
+for x in RemnoteDocs:
+    if("n" in x and  x["n"] == 1):
+        allParentRem.append(x)
+        if("rcrt" in x and x["rcrt"] == "d"):
+            # Convert Daily Documents to folder
+            x["key"][0] = daildDocsFolder
+            x["forceIsFolder"] = True
+    # if "forceIsFolder" in x and  x["forceIsFolder"]:
+    #     allFolders.append(x)
+    #     if x["parent"] == None:
+    #         topFolders.append(x)
 
 
 def getAllDocs(RemList):
@@ -65,28 +80,34 @@ def main():
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
 
-def createFile(remID, remFilePath):
+def createFile(remID, remFolderPath):
     # this is recursive function, so cannot be moved directly to main() function
     if ignoreRem(remID):
         return
     remText = textFromID(remID)
     remDict = dictFromID(remID)
     if "forceIsFolder" in remDict and remDict["forceIsFolder"]:
-            newFilePath = os.path.join(remFilePath, remText)
+            newFilePath = os.path.join(remFolderPath, remText)
             for child in remDict["children"]:
                 createFile(child, newFilePath)
     else:
-        os.makedirs(remFilePath, exist_ok=True)
+        os.makedirs(remFolderPath, exist_ok=True)
         filename = remText
+        fileTitle = filename
         # filename = re.sub('[^\w\-_\. ]', '_', filename)
-        filePath = os.path.join(remFilePath, filename + ".md")
+        if(os.path.basename(remFolderPath) == daildDocsFolder):
+            # dailyDocName = datetime.datetime.strptime(filename, "%B %dth, %Y").date()
+            dailyDocName = dateParse(filename)
+            filename = dailyDocName.strftime("%Y-%m-%d")
+            # fileTitle += " (" + filename + ")"
+        filePath = os.path.join(remFolderPath, filename + ".md")
 
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
                 child = expandChildren(remID)
                 expandBullets = "\n".join(child)
 
-                f.write("# " + filename + "\n" + expandBullets)
+                f.write("# " + fileTitle + "\n" + expandBullets)
             # print(f'{remText}.md created')
             created.append("ID: " + remID + ",  Name: " + filename)
         except Exception as e:
@@ -105,7 +126,7 @@ def ignoreRem(ID):
     or ("contains:" in dict["key"]) 
     or ("rcrp" in dict) 
     or ("rcrs" in dict) 
-    or ("rcrt" in dict and dict["rcrt"] != "c")
+    or ("rcrt" in dict and dict["rcrt"] != "c" and dict["rcrt"] != "d")
     or ("type" in dict and dict["type"] == 6)):
         return True
     else:
@@ -195,6 +216,8 @@ def textFromID(ID, level = 0):
         and not ID in allDocID 
         and not("forceIsFolder" in dict and  dict["forceIsFolder"])):
             text += addTags(dict)
+    
+    text = fence_HTMLtags(text)
     return text
 
 
@@ -207,6 +230,16 @@ def addTags(dict):
             text += f' #{textExtract}'
         
     return text
+
+
+def fence_HTMLtags(string):
+    # Reference: https://regex101.com/r/BVWwGK/10
+    if not string.startswith("```"):
+        # \g<0> stands for whole match - so we're adding backtick (`) as suffix and prefix for whole match
+        # reference: https://docs.python.org/3/library/re.html#re.sub
+        # \g<0> instead of \0 - reference: https://stackoverflow.com/q/58134893/6908282
+        string = re.sub(re_HTML, r"`\g<0>`", string)
+    return string
 
 
 def parentFromID(ID):
