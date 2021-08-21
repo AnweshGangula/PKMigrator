@@ -54,9 +54,13 @@ ___
         ```
 
 * Objects with blank array of key property can be ignored - `"key":[]`
-* Any object containing `"rcre":` or `"rcrt": ` can be ignored - they are [Power-up Rems](https://www.redgregory.com/remnote-content/2020/11/1/a-list-of-remnotes-power-up-rems-and-what-they-do).
+* Any object containing `"rcre":` or `"rcrt": ` or `"rcrs": ` can be ignored - they are [Power-up Rems](https://www.redgregory.com/remnote-content/2020/11/1/a-list-of-remnotes-power-up-rems-and-what-they-do).
     * RegEx to find them: `\{((.|\n)*?"rcre")((.|\n)*?\})`
     * Object with `"rcrt": "c"` is **Custom CSS**
+    * Object with `"rcrt": "t"` is **TODO**
+    * Object with `"rcrt": "d"` is **Daily Documents**
+
+    * [x] Note: Check for all `"rcrt"` is done
 * Any object containing `"rcrp":` can be ignored
     * these are actually metadata of Rem (Heading Level, color, status etc...) - These can be ignored**
     * Understand of values:

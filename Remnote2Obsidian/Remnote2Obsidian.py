@@ -9,53 +9,64 @@ jsonFile = "rem.json"
 # jsonPath = sys.argv[1]
 # homepageName = "Personal"
 homepageID = "pAbgiAqZ45tLDzSpS" # you can find this in the URL (eg: https://www.remnote.io/document/HrxrQbMC3fXbBpWPB)
+dailyDocsID = "dyqaWLHtstN4iqAYk"
 includeTopLevelRem = True
 includeCustomCSS = True
 folderName = "Rem2Obs"
 # ---------------------------------------------------------------
 
 jsonPath = os.path.join(dir_path, jsonFile)
-Rem2ObsPath = os.path.join(dir_path, folderName)
+Rem2ObsPath = os.path.join(os.path.dirname(jsonPath), folderName)
 os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
 RemnoteDocs = remnoteJSON["docs"]
-mainPageID = [x["children"] for x in RemnoteDocs if x["_id"] == homepageID][0]
-# print([[x["key"], x["_id"]] for x in RemnoteDocs if x["key"] == [homepageName]])
 
-if includeTopLevelRem:
-    parentRem = [x["_id"] for x in RemnoteDocs if "parent" in x and x["parent"] == None]
-    # print(parentRem)
-    mainPageID = mainPageID + list(set(parentRem) - set(mainPageID))
+allParentRem = [x for x in RemnoteDocs if "n" in x and  x["n"] == 1]
+allFolders = [x for x in RemnoteDocs if "forceIsFolder" in x and  x["forceIsFolder"]]
+topFolders = [x for x in allFolders if x["parent"] == None]
+
+allDocs = [x["children"] for x in topFolders]
+allDocID = [doc for childList in allDocs for doc in childList]
 
 def main():
-    parentFiles = [x for x in mainPageID if not ignoreRem(dictFromID(x))]
-    mainFiles = expandChildren(homepageID)
+    created = []
+    notCreated = []
+    topFolders.append(dictFromID(dailyDocsID))
+    for folder in topFolders:
+        for file in folder["children"]:
+            if ignoreRem(file):
+                continue
+            folderPath = os.path.join(Rem2ObsPath, folder["key"][0])
+            os.makedirs(folderPath, exist_ok=True)
+            filename = textFromID(file)
+            # filename = re.sub('[^\w\-_\. ]', '_', filename)
+            filePath = os.path.join(folderPath, filename + ".md")
 
-    notCreated = 0
-    for file in parentFiles:
-        filename = textFromID(file)
-        # filename = re.sub('[^\w\-_\. ]', '_', filename)
-        filePath = os.path.join(Rem2ObsPath, filename + ".md")
+            try:
+                with open(filePath, mode="wt", encoding="utf-8") as f:
+                    child = expandChildren(file)
+                    expandBullets = "\n".join(child)
 
-        child = expandChildren(file)
-        expandBullets = "\n".join(child)
-        try:
-            with open(filePath, mode="wt", encoding="utf-8") as f:
-                f.write("# " + filename + "\n" + expandBullets)
-            # print(f'{file["key"][0]}.md created')
-        except:
-            notCreated += 1
-            print("\ncannot create file with name: " + filename)
+                    f.write("# " + filename + "\n" + expandBullets)
+                # print(f'{file["key"][0]}.md created')
+                created.append("ID: " + file + ",  Name: " + filename)
+            except Exception as e:
+                print(e)
+                notCreated.append("ID: " + file + ",  Name: " + filename)
+                print("\ncannot create file with name: " + filename)
 
-    print("\n" + str(len(parentFiles) - notCreated) + " files generated")
-    print(str(notCreated) + " file/s could not be generated") if notCreated>0 else None
+    print("\n" + str(len(created)) + " files generated")
+    print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
 
-def ignoreRem(dict):
+def ignoreRem(ID):
+    dict = dictFromID(ID)
     if((dict["key"] == []) 
     or ("contains:" in dict["key"]) 
     or ("rcrp" in dict) 
+    or ("rcrs" in dict) 
+    or ("rcrt" in dict and dict["rcrt"] != "c")
     or ("type" in dict and dict["type"] == 6)
     ):
         return True
@@ -70,7 +81,7 @@ def expandChildren(ID, level=0):
 
     childData = [x for x in RemnoteDocs if x["_id"] in childID]
     for x in childData:
-        if not ignoreRem(x):
+        if not ignoreRem(x["_id"]):
             if(ID == homepageID) or ("parent" in x and x["parent"] == None):
                 # filteredChildren.append(x)
                 pass
@@ -110,7 +121,7 @@ def textFromID(ID):
         elif(item["i"] == "q" and "_id" in item):
             newDict = dictFromID(item["_id"])
             newID = newDict["_id"]
-            if newID in mainPageID:
+            if newID in allDocID:
                 text += f'[[{parentFromID(newID)}]]'
             else:
                 text += f'![[{parentFromID(newID)}#^{newID}]]'
@@ -143,9 +154,9 @@ def textFromID(ID):
 def parentFromID(ID):
     fileName = ""
     dict = dictFromID(ID)
-    if(ID in mainPageID or "parent" not in dict or dict["parent"] == None):
+    if(ID in allDocID or ("parent" in dict and dict["parent"] == None)):
         fileName =  textFromID(ID)
-    elif dict["parent"] in mainPageID:
+    elif dict["parent"] in allDocID:
         fileName = textFromID(dict["parent"])
     else:
         fileName = parentFromID(dict["parent"])
