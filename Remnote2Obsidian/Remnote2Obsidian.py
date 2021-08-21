@@ -15,13 +15,8 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 # user-input variables: ----------------------------------------
 jsonFile = "rem.json"
 # jsonPath = sys.argv[1]
-# homepageName = "Personal"
-homepageID = "pAbgiAqZ45tLDzSpS" # you can find this in the URL (eg: https://www.remnote.io/document/HrxrQbMC3fXbBpWPB)
-dailyDocsID = "dyqaWLHtstN4iqAYk"
-daildDocsFolder = "Daily Documents"
-includeTopLevelRem = True
-includeCustomCSS = True
 folderName = "Rem2Obs"
+dailyDocsFolder = "Daily Documents"
 
 re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
 # ---------------------------------------------------------------
@@ -41,7 +36,7 @@ for x in RemnoteDocs:
         allParentRem.append(x)
         if("rcrt" in x and x["rcrt"] == "d"):
             # Convert Daily Documents to folder
-            x["key"][0] = daildDocsFolder
+            x["key"][0] = dailyDocsFolder
             x["forceIsFolder"] = True
     # if "forceIsFolder" in x and  x["forceIsFolder"]:
     #     allFolders.append(x)
@@ -95,7 +90,7 @@ def createFile(remID, remFolderPath):
         filename = remText
         fileTitle = filename
         # filename = re.sub('[^\w\-_\. ]', '_', filename)
-        if(os.path.basename(remFolderPath) == daildDocsFolder):
+        if(os.path.basename(remFolderPath) == dailyDocsFolder):
             # dailyDocName = datetime.datetime.strptime(filename, "%B %dth, %Y").date()
             dailyDocName = dateParse(filename)
             filename = dailyDocName.strftime("%Y-%m-%d")
@@ -141,23 +136,19 @@ def expandChildren(ID, level=0):
     childData = [x for x in RemnoteDocs if x["_id"] in childID]
     for x in childData:
         if not ignoreRem(x["_id"]):
-            if(ID == homepageID) or ("parent" in x and x["parent"] == None):
-                # filteredChildren.append(x)
-                pass
-            else:
-                prefix = ""
-                if level >= 1:
-                    prefix = "    " * level
-                prefix += "* "
-                text = prefix +  textFromID(x["_id"])
-                if "references" in x and not(x["references"] == []):
-                    text += f' ^{x["_id"].replace("_", "-")}'
-                if "\n" in text:
-                    text = text.replace("\r ", "\n")
-                    text = text.replace("\n", "\n" + prefix.replace("*", " "))
-                filteredChildren.append(text)
+            prefix = ""
+            if level >= 1:
+                prefix = "    " * level
+            prefix += "* "
+            text = prefix +  textFromID(x["_id"])
+            if "references" in x and not(x["references"] == []):
+                text += f' ^{x["_id"].replace("_", "-")}'
+            if "\n" in text:
+                text = text.replace("\r ", "\n")
+                text = text.replace("\n", "\n" + prefix.replace("*", " "))
+            filteredChildren.append(text)
 
-                filteredChildren.extend(expandChildren(x["_id"], level + 1 ))
+            filteredChildren.extend(expandChildren(x["_id"], level + 1 ))
 
     return filteredChildren
 

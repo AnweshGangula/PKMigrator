@@ -6,8 +6,11 @@ ___
 > ## TODO
 > * [ ] Block Ref in folders need to include folder name (eg: `[[Folder/file#^blockID]]`)
 > * [x] Tagged REM are not referenced anywhere - convert them to Block Ref's - Example: **Essential PC App**
->    * `"typeParents": [` is used to identify this
-> * [ ] Remove unnecessary files from my personal Remnote
+>   * `"typeParents": [` is used to identify this
+> * [ ] Remove unnecessary files outside my personal Remnote
+>   * Few Tags are are parent level though - like "Essential PC App, Brain Stack"
+> * [ ] Add TODO's into Bullets - `"t": {` 
+>   * Exclude TODO from CustomCSS  
 > * [x] add **Daily Documents** folder and include files 
 > * [x] enclose all HTML tags with backticks (`)
 > * [ ] optionally convert Custom CSS REM to md file
@@ -66,7 +69,9 @@ ___
 * Any object containing `"rcre":` or `"rcrt": ` or `"rcrs": ` can be ignored - they are [Power-up Rems](https://www.redgregory.com/remnote-content/2020/11/1/a-list-of-remnotes-power-up-rems-and-what-they-do).
     * RegEx to find them: `\{((.|\n)*?"rcre")((.|\n)*?\})`
     * Object with `"rcrt": "c"` is **Custom CSS**
-    * Object with `"rcrt": "t"` is **TODO**
+    * Object with `"rcrt": "t"` is Parent **TODO** REMM
+        * Object with `"t"` in `"crt"` is **TODO**
+            * example: `"t": {`
     * Object with `"rcrt": "d"` is **Daily Documents**
 
     * [x] Note: Check for all `"rcrt"` is done
