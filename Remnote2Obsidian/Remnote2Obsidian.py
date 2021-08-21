@@ -151,8 +151,9 @@ def dictFromID(ID):
         pass
     return dict
 
-def textFromID(ID):
-    key = dictFromID(ID)["key"]
+def textFromID(ID, level = 0):
+    dict = dictFromID(ID)
+    key = dict["key"]
     text = ""
     for item in key:
         if(isinstance(item, str)):
@@ -188,20 +189,22 @@ def textFromID(ID):
         else:
             print("ERROR at textFromID function for ID: " + ID)
 
-    text += addTags(ID)
+    if level == 0:
+        # level is used to disable recursive expansion, since tags don't need to be recursive
+        if (("typeParents" in dict and len(dict["typeParents"])>0) 
+        and not ID in allDocID 
+        and not("forceIsFolder" in dict and  dict["forceIsFolder"])):
+            text += addTags(dict)
     return text
 
 
-def addTags(ID):
+def addTags(dict):
     text = ""
-    dict = dictFromID(ID)
-    if (("typeParents" in dict and len(dict["typeParents"])>0)
-        and not ID in allDocID
-        and not("forceIsFolder" in dict and  dict["forceIsFolder"])
-        ):
-        for x in dict["typeParents"]:
-            if not ignoreRem(x):
-                text += f' #{textFromID(x).strip().replace(" ", "_")} '
+    for x in dict["typeParents"]:
+        if not ignoreRem(x):
+            textExtract = textFromID(x, level = 1).strip()
+            textExtract = re.sub(r'[^A-Za-z0-9-]+', '_', textExtract)
+            text += f' #{textExtract}'
         
     return text
 

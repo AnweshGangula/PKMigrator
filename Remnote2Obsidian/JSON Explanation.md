@@ -9,6 +9,7 @@ ___
 >    * `"typeParents": [` is used to identify this
 > * [ ] Remove unnecessary files from my personal Remnote
 > * [ ] add Dailypage folder and include files 
+> * [ ] enclose all HTML tags with backticks (`)
 > * [ ] optionally convert Custom CSS REM to md file
 > * [ ] add print statement to show [how long the process took](https://stackoverflow.com/questions/1557571/how-do-i-get-time-of-a-python-programs-execution).
 > * [ ] Parent-Level files without children or portals or references or typeChildren need to be removed
