@@ -1,3 +1,9 @@
+# Custom ignore file
+*.pyc
+
+
+# Default ignore files
+
 # Logs
 logs
 *.log

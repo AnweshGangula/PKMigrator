@@ -1,7 +1,14 @@
 # terminal code: "cd Remnote2Obsidian && python Remnote2Obsidian.py"
 
-import sys, os, json, re
+# print("Python execution started")
+import sys, os, json, datetime, re
 
+# Import modules from current project:
+from progressBar import printProgressBar 
+
+# Custom Package installation
+
+start_time = datetime.datetime.now()
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # user-input variables: ----------------------------------------
@@ -23,52 +30,83 @@ remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="igno
 RemnoteDocs = remnoteJSON["docs"]
 
 allParentRem = [x for x in RemnoteDocs if "n" in x and  x["n"] == 1]
-allFolders = [x for x in RemnoteDocs if "forceIsFolder" in x and  x["forceIsFolder"]]
-topFolders = [x for x in allFolders if x["parent"] == None]
+# allFolders = [x for x in RemnoteDocs if "forceIsFolder" in x and  x["forceIsFolder"]]
+# topFolders = [x for x in allFolders if x["parent"] == None]
 
-allDocs = [x["children"] for x in topFolders]
-allDocID = [doc for childList in allDocs for doc in childList]
 
+def getAllDocs(RemList):
+    IDlist = []
+    for rem in RemList:
+        IDlist.append(rem["_id"])
+        if "forceIsFolder" in rem and  rem["forceIsFolder"]:
+            childRem = []
+            for child in rem["children"]:
+                dict = [x for x in RemnoteDocs if x["_id"] == child][0] 
+                childRem.append(dict)
+            IDlist.extend(getAllDocs(childRem))
+    return IDlist
+
+allDocID = getAllDocs(allParentRem)
+# allDocID is used in textFromID function
+
+created = []
+notCreated = []
 def main():
-    created = []
-    notCreated = []
-    topFolders.append(dictFromID(dailyDocsID))
-    for folder in topFolders:
-        for file in folder["children"]:
-            if ignoreRem(file):
-                continue
-            folderPath = os.path.join(Rem2ObsPath, folder["key"][0])
-            os.makedirs(folderPath, exist_ok=True)
-            filename = textFromID(file)
-            # filename = re.sub('[^\w\-_\. ]', '_', filename)
-            filePath = os.path.join(folderPath, filename + ".md")
+    printProgressBar(0, len(allParentRem), prefix = 'Progress:', suffix = 'Complete', length = 50)
+    i=0
+    for dict in allParentRem:
+        i += 1
+        printProgressBar(i, len(allParentRem), prefix = 'Progress:', suffix = 'Complete', length = 50)
+        createFile(dict["_id"], Rem2ObsPath)
 
-            try:
-                with open(filePath, mode="wt", encoding="utf-8") as f:
-                    child = expandChildren(file)
-                    expandBullets = "\n".join(child)
-
-                    f.write("# " + filename + "\n" + expandBullets)
-                # print(f'{file["key"][0]}.md created')
-                created.append("ID: " + file + ",  Name: " + filename)
-            except Exception as e:
-                print(e)
-                notCreated.append("ID: " + file + ",  Name: " + filename)
-                print("\ncannot create file with name: " + filename)
-
+    timetaken = str(datetime.datetime.now() - start_time)
+    print(f"\nTime Taken to Process PDF: {timetaken}")
     print("\n" + str(len(created)) + " files generated")
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
 
+def createFile(remID, remFilePath):
+    # this is recursive function, so cannot be moved directly to main() function
+    if ignoreRem(remID):
+        return
+    remText = textFromID(remID)
+    remDict = dictFromID(remID)
+    if "forceIsFolder" in remDict and remDict["forceIsFolder"]:
+            newFilePath = os.path.join(remFilePath, remText)
+            for child in remDict["children"]:
+                createFile(child, newFilePath)
+    else:
+        os.makedirs(remFilePath, exist_ok=True)
+        filename = remText
+        # filename = re.sub('[^\w\-_\. ]', '_', filename)
+        filePath = os.path.join(remFilePath, filename + ".md")
+
+        try:
+            with open(filePath, mode="wt", encoding="utf-8") as f:
+                child = expandChildren(remID)
+                expandBullets = "\n".join(child)
+
+                f.write("# " + filename + "\n" + expandBullets)
+            # print(f'{remText}.md created')
+            created.append("ID: " + remID + ",  Name: " + filename)
+        except Exception as e:
+            print(e)
+            notCreated.append("ID: " + remID + ",  Name: " + filename)
+            # print("\ncannot create file with ID: " + remID + ", Name: "+ filename + "\n")
+    
+
+
 def ignoreRem(ID):
+    # TODO: add more ignore ID's
+    ignoreID = ["9onq37x6PbsFxvRqu", "6sz2MJeFLZoTRQofZ"]
     dict = dictFromID(ID)
-    if((dict["key"] == []) 
+    if(dict == []
+    or dict["key"] == [] 
     or ("contains:" in dict["key"]) 
     or ("rcrp" in dict) 
     or ("rcrs" in dict) 
     or ("rcrt" in dict and dict["rcrt"] != "c")
-    or ("type" in dict and dict["type"] == 6)
-    ):
+    or ("type" in dict and dict["type"] == 6)):
         return True
     else:
         return False
@@ -106,14 +144,16 @@ def expandChildren(ID, level=0):
 def dictFromID(ID):
     dict=[]
     try:
-        dict = [x for x in RemnoteDocs if x["_id"] in ID][0]
-    except:
-        print(f"REM with ID: '{ID}' not found")
-        # pass
+        dict = [x for x in RemnoteDocs if x["_id"] == ID][0]
+    except Exception as e:
+        # print(e)
+        # print(f"REM with ID: '{ID}' not found")
+        pass
     return dict
 
-def textFromID(ID):
-    key = dictFromID(ID)["key"]
+def textFromID(ID, level = 0):
+    dict = dictFromID(ID)
+    key = dict["key"]
     text = ""
     for item in key:
         if(isinstance(item, str)):
@@ -148,6 +188,24 @@ def textFromID(ID):
             text += f'![]({item["url"]})'
         else:
             print("ERROR at textFromID function for ID: " + ID)
+
+    if level == 0:
+        # level is used to disable recursive expansion, since tags don't need to be recursive
+        if (("typeParents" in dict and len(dict["typeParents"])>0) 
+        and not ID in allDocID 
+        and not("forceIsFolder" in dict and  dict["forceIsFolder"])):
+            text += addTags(dict)
+    return text
+
+
+def addTags(dict):
+    text = ""
+    for x in dict["typeParents"]:
+        if not ignoreRem(x):
+            textExtract = textFromID(x, level = 1).strip()
+            textExtract = re.sub(r'[^A-Za-z0-9-]+', '_', textExtract)
+            text += f' #{textExtract}'
+        
     return text
 
 

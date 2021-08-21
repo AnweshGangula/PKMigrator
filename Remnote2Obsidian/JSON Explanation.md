@@ -4,9 +4,18 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
 ___
 
 > ## TODO
-> * [ ] Automatically look for folders with `"forceIsFolder": true` and `"parent": null` properties
->   * [ ] differentiate between bullet and file inside a folder REM (blocks vs children!!)
-> * [ ] Exclude unnecessary Power-Up Rem's
+> * [ ] Block Ref in folders need to include folder name (eg: `[[Folder/file#^blockID]]`)
+> * [x] Tagged REM are not referenced anywhere - convert them to Block Ref's - Example: **Essential PC App**
+>    * `"typeParents": [` is used to identify this
+> * [ ] Remove unnecessary files from my personal Remnote
+> * [ ] add Dailypage folder and include files 
+> * [ ] enclose all HTML tags with backticks (`)
+> * [ ] optionally convert Custom CSS REM to md file
+> * [ ] add print statement to show [how long the process took](https://stackoverflow.com/questions/1557571/how-do-i-get-time-of-a-python-programs-execution).
+> * [ ] Parent-Level files without children or portals or references or typeChildren need to be removed
+> * [x] Automatically look for folders with `"forceIsFolder": true` and `"parent": null` properties
+>   * [x] differentiate between bullet and file inside a folder REM (blocks vs children!!)
+> * [x] Exclude unnecessary Power-Up Rem's
 > * [x] Indent newlines in code-block and remove bullets
 > * [x] Add Block-ref's and page ref's
 
@@ -89,6 +98,8 @@ ___
 * Object with `"i": "m"` and `"url": ` as a property in `key` are URL links
 * Object with `"i": "m"` and `"h": ` as a property in `key` are Highlighted Text
 * Object with `"references": [\n` has been referenced in other blocks
+* crt object of a object has metadata of REM - like Heading, color etc... `"crt": {`
+* Object with non empty `""typeParents": [` have hashtags in them
 
 * `typeParents: ` property is a list of Tags added to the REM
 
