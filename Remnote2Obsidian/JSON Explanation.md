@@ -3,19 +3,21 @@
 If your rem.json file is too large, VS Code may not be able to prettify it. You can [use python](https://stackoverflow.com/questions/19875218/best-way-to-format-large-json-file-30-mb) instead to prettify it: `type rem.json | python -mjson.tool > pretty.json`
 ___
 
-> ## TODO
+> ## _TODO
 > * [ ] Block Ref in folders need to include folder name (eg: `[[Folder/file#^blockID]]`)
+> * [x] Add TODO's into Bullets - `"t": {` 
+> * [x] Parent-Level files without `children` or `portals` or `references` or `typeChildren` need to be removed
+> * [ ] Remove unnecessary files outside my personal Remnote
+
+## DONE
 > * [x] Tagged REM are not referenced anywhere - convert them to Block Ref's - Example: **Essential PC App**
 >   * `"typeParents": [` is used to identify this
-> * [ ] Remove unnecessary files outside my personal Remnote
 >   * Few Tags are are parent level though - like "Essential PC App, Brain Stack"
-> * [ ] Add TODO's into Bullets - `"t": {` 
 >   * Exclude TODO from CustomCSS  
 > * [x] add **Daily Documents** folder and include files 
 > * [x] enclose all HTML tags with backticks (`)
-> * [ ] optionally convert Custom CSS REM to md file
-> * [ ] add print statement to show [how long the process took](https://stackoverflow.com/questions/1557571/how-do-i-get-time-of-a-python-programs-execution).
-> * [ ] Parent-Level files without children or portals or references or typeChildren need to be removed
+> * [x] add print statement to show [how long the process took](https://stackoverflow.com/questions/1557571/how-do-i-get-time-of-a-python-programs-execution).
+> * [x] add progress bar to show percentage complete of process.
 > * [x] Automatically look for folders with `"forceIsFolder": true` and `"parent": null` properties
 >   * [x] differentiate between bullet and file inside a folder REM (blocks vs children!!)
 > * [x] Exclude unnecessary Power-Up Rem's

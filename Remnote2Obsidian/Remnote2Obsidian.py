@@ -47,13 +47,20 @@ for x in RemnoteDocs:
 def getAllDocs(RemList):
     IDlist = []
     for rem in RemList:
-        IDlist.append(rem["_id"])
         if "forceIsFolder" in rem and  rem["forceIsFolder"]:
             childRem = []
             for child in rem["children"]:
                 dict = [x for x in RemnoteDocs if x["_id"] == child][0] 
                 childRem.append(dict)
             IDlist.extend(getAllDocs(childRem))
+        if(len(rem["children"])>0
+        or (len(rem.get("portalsIn", []))>0)
+        or (len(rem.get("references", []))>0)
+        or (len(rem.get("typeChildren", []))>0)):
+            IDlist.append(rem["_id"])
+        else:
+            # print("REM not used anywhere")
+            pass
     return IDlist
 
 allDocID = getAllDocs(allParentRem)
@@ -66,11 +73,13 @@ def main():
     i=0
     for dict in allParentRem:
         i += 1
+        if ignoreRem(dict["_id"]):
+            continue
         printProgressBar(i, len(allParentRem), prefix = 'Progress:', suffix = 'Complete', length = 50)
         createFile(dict["_id"], Rem2ObsPath)
 
     timetaken = str(datetime.datetime.now() - start_time)
-    print(f"\nTime Taken to Process PDF: {timetaken}")
+    print(f"\nTime Taken to Generate Obsidian Vault: {timetaken}")
     print("\n" + str(len(created)) + " files generated")
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
@@ -106,10 +115,10 @@ def createFile(remID, remFolderPath):
             # print(f'{remText}.md created')
             created.append("ID: " + remID + ",  Name: " + filename)
         except Exception as e:
-            print(e)
+            # print(e)
             notCreated.append("ID: " + remID + ",  Name: " + filename)
             # print("\ncannot create file with ID: " + remID + ", Name: "+ filename + "\n")
-    
+
 
 
 def ignoreRem(ID):
@@ -144,7 +153,7 @@ def expandChildren(ID, level=0):
             if "references" in x and not(x["references"] == []):
                 text += f' ^{x["_id"].replace("_", "-")}'
             if "\n" in text:
-                text = text.replace("\r ", "\n")
+                # text = text.replace("\r", "\n")
                 text = text.replace("\n", "\n" + prefix.replace("*", " "))
             filteredChildren.append(text)
 
@@ -167,6 +176,13 @@ def textFromID(ID, level = 0):
     dict = dictFromID(ID)
     key = dict["key"]
     text = ""
+
+    todoStatus = getTODO(dict)
+    if todoStatus == "Finished":
+        text += "[x] "
+    elif todoStatus == "Unfinished":
+        text += "[ ] "
+
     for item in key:
         if(isinstance(item, str)):
             text += item
@@ -222,6 +238,18 @@ def addTags(dict):
         
     return text
 
+
+def getTODO(keyDict):
+    if isinstance(keyDict["key"][0], dict) and keyDict["key"][0].get("i") == "o":
+        # Excludue "Custom CSS" Rem - Dont add Todo check-boxes from here
+        # Typically, CSS code-block has only one item in the key dictionary and all code-block have property `"i": "o"` 
+        return False
+    todo = keyDict.get("crt")
+    if todo and "t" in todo:
+        todoStatus = todo["t"]["s"]["s"]
+        return todoStatus
+    else:
+        return False
 
 def fence_HTMLtags(string):
     # Reference: https://regex101.com/r/BVWwGK/10
