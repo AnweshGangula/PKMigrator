@@ -17,6 +17,7 @@ jsonFile = "rem.json"
 # jsonPath = sys.argv[1]
 folderName = "Rem2Obs"
 dailyDocsFolder = "Daily Documents"
+highlightToHTML = True # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 
 re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
 # ---------------------------------------------------------------
@@ -153,7 +154,7 @@ def expandChildren(ID, level=0):
             if "references" in x and not(x["references"] == []):
                 text += f' ^{x["_id"].replace("_", "-")}'
             if "\n" in text:
-                # text = text.replace("\r", "\n")
+                text = text.replace("\r", "\n")
                 text = text.replace("\n", "\n" + prefix.replace("*", " "))
             filteredChildren.append(text)
 
@@ -185,7 +186,7 @@ def textFromID(ID, level = 0):
 
     for item in key:
         if(isinstance(item, str)):
-            text += item
+            text += fence_HTMLtags(item)
         elif(item["i"] == "q" and "_id" in item):
             newDict = dictFromID(item["_id"])
             newID = newDict["_id"]
@@ -195,8 +196,11 @@ def textFromID(ID, level = 0):
                 text += f'![[{parentFromID(newID)}#^{newID}]]'
         elif(item["i"] == "o"):
             text += f'```{item["language"]}\n{item["text"]}\n  ```'
+        elif(item["i"] == "i" and "url" in item):
+            text += f'![]({item["url"]})'
         elif(item["i"] == "m"):
             currText = item["text"]
+            currText = fence_HTMLtags(currText)
             if ("url" in item):
                 text += f'[{currText}]({item["url"]})'
             if (currText.strip() == ""):
@@ -205,15 +209,13 @@ def textFromID(ID, level = 0):
                 text += f'`{currText}`'
             elif("b" in item and item["b"]):
                 if("h" in item and item["h"]):
-                    text += f'==**{currText}**=='
+                    text += textHighlight(currText, item["h"], html = highlightToHTML)
                 else:
                     text += f'**{currText}**'
             elif("x" in item and item["x"]):
                 text = f'$${currText}$$'
             elif("u" in item and item["u"]):
                 text += currText
-        elif(item["i"] == "i" and "url" in item):
-            text += f'![]({item["url"]})'
         else:
             print("ERROR at textFromID function for ID: " + ID)
 
@@ -224,7 +226,6 @@ def textFromID(ID, level = 0):
         and not("forceIsFolder" in dict and  dict["forceIsFolder"])):
             text += addTags(dict)
     
-    text = fence_HTMLtags(text)
     return text
 
 
@@ -236,6 +237,30 @@ def addTags(dict):
             textExtract = re.sub(r'[^A-Za-z0-9-]+', '_', textExtract)
             text += f' #{textExtract}'
         
+    return text
+
+
+def textHighlight(text, colorNum, html = False):
+    if html:
+        # Switch-Case: https://stackoverflow.com/a/60211/6908282
+        def switch(x):
+            colorList = {
+                1 : "firebrick",
+                2 : "darkorange",
+                3 : "goldenrod",
+                4 : "seagreen",
+                5 : "steelblue",
+                6 : "rebeccapurple",
+            }
+            
+            color = colorList.get(x, "")
+            return color
+
+        color = switch(colorNum)
+        text = f'<mark style=" background-color: {color}; ">{text}</mark>'
+    else:
+        text = f'==**{text}**=='
+    
     return text
 
 

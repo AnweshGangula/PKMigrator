@@ -5,11 +5,14 @@ ___
 
 > ## _TODO
 > * [ ] Block Ref in folders need to include folder name (eg: `[[Folder/file#^blockID]]`)
-> * [x] Add TODO's into Bullets - `"t": {` 
-> * [x] Parent-Level files without `children` or `portals` or `references` or `typeChildren` need to be removed
+> * [x] convert highlights to HTML `<mark>` tags with respective color
+>   * Example: `<mark style=" background-color: red; ">milk</mark>`
+>   * Reference: https://www.reddit.com/r/ObsidianMD/comments/nu0olr/multicolored_highlighting_in_obsidian/
 > * [ ] Remove unnecessary files outside my personal Remnote
 
 ## DONE
+> * [x] Add TODO's into Bullets - `"t": {` 
+> * [x] Parent-Level files without `children` or `portals` or `references` or `typeChildren` need to be removed
 > * [x] Tagged REM are not referenced anywhere - convert them to Block Ref's - Example: **Essential PC App**
 >   * `"typeParents": [` is used to identify this
 >   * Few Tags are are parent level though - like "Essential PC App, Brain Stack"
