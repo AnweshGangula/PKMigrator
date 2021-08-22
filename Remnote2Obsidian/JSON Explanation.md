@@ -4,10 +4,8 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
 ___
 
 > ## _TODO
-> * [ ] Block Ref in folders need to include folder name (eg: `[[Folder/file#^blockID]]`)
-> * [x] convert highlights to HTML `<mark>` tags with respective color
->   * Example: `<mark style=" background-color: red; ">milk</mark>`
->   * Reference: https://www.reddit.com/r/ObsidianMD/comments/nu0olr/multicolored_highlighting_in_obsidian/
+> * [x] Block Ref in folders need to include folder name (eg: `[[Folder/file#^blockID]]`)
+> * [ ] Preserve the order of REM's as per Remnote Web app
 > * [ ] Remove unnecessary files outside my personal Remnote
 
 ## DONE
@@ -24,6 +22,9 @@ ___
 > * [x] Automatically look for folders with `"forceIsFolder": true` and `"parent": null` properties
 >   * [x] differentiate between bullet and file inside a folder REM (blocks vs children!!)
 > * [x] Exclude unnecessary Power-Up Rem's
+> * [x] convert highlights to HTML `<mark>` tags with respective color
+>   * Example: `<mark style=" background-color: red; ">milk</mark>`
+>   * Reference: https://www.reddit.com/r/ObsidianMD/comments/nu0olr/multicolored_highlighting_in_obsidian/
 > * [x] Indent newlines in code-block and remove bullets
 > * [x] Add Block-ref's and page ref's
 

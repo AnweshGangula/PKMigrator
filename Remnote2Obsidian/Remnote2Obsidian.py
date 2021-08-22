@@ -80,7 +80,7 @@ def main():
         createFile(dict["_id"], Rem2ObsPath)
 
     timetaken = str(datetime.datetime.now() - start_time)
-    print(f"\nTime Taken to Generate Obsidian Vault: {timetaken}")
+    print(f"\nTime Taken to Generate Obsidian Vault - {folderName}: {timetaken}")
     print("\n" + str(len(created)) + " files generated")
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
@@ -292,11 +292,23 @@ def parentFromID(ID):
     if(ID in allDocID or ("parent" in dict and dict["parent"] == None)):
         fileName =  textFromID(ID)
     elif dict["parent"] in allDocID:
-        fileName = textFromID(dict["parent"])
+        filePath = getFilePath(ID)
+        filePath.reverse()
+        fileName = "/".join(filePath)
     else:
         fileName = parentFromID(dict["parent"])
 
     return fileName
+
+
+def getFilePath(ID):
+    pathList = []
+    dict = dictFromID(ID)
+    if dict != [] and dict.get("parent", None) != None:
+        pathList.append(textFromID(dict["parent"]))
+        pathList.extend(getFilePath(dict["parent"]))
+
+    return pathList
 
 if __name__ == '__main__':
     main()
