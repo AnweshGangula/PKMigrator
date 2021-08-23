@@ -33,9 +33,9 @@ allParentRem = []
 # allFolders = []
 # topFolders = []
 for x in RemnoteDocs:
-    if("n" in x and  x["n"] == 1):
+    if(x.get("n", False) == 1):
         allParentRem.append(x)
-        if("rcrt" in x and x["rcrt"] == "d"):
+        if(x.get("rcrt", False) == "d"):
             # Convert Daily Documents to folder
             x["key"][0] = dailyDocsFolder
             x["forceIsFolder"] = True
@@ -48,7 +48,7 @@ for x in RemnoteDocs:
 def getAllDocs(RemList):
     IDlist = []
     for rem in RemList:
-        if "forceIsFolder" in rem and  rem["forceIsFolder"]:
+        if rem.get("forceIsFolder", False):
             childRem = []
             for child in rem["children"]:
                 dict = [x for x in RemnoteDocs if x["_id"] == child][0] 
@@ -91,7 +91,7 @@ def createFile(remID, remFolderPath):
         return
     remText = textFromID(remID)
     remDict = dictFromID(remID)
-    if "forceIsFolder" in remDict and remDict["forceIsFolder"]:
+    if remDict.get("forceIsFolder", False):
             newFilePath = os.path.join(remFolderPath, remText)
             for child in remDict["children"]:
                 createFile(child, newFilePath)
@@ -131,8 +131,8 @@ def ignoreRem(ID):
     or ("contains:" in dict["key"]) 
     or ("rcrp" in dict) 
     or ("rcrs" in dict) 
-    or ("rcrt" in dict and dict["rcrt"] != "c" and dict["rcrt"] != "d")
-    or ("type" in dict and dict["type"] == 6)):
+    or ("rcrt" in dict and dict.get("rcrt") != "c" and dict.get("rcrt") != "d")
+    or (dict.get("type", False) == 6)):
         return True
     else:
         return False
@@ -151,7 +151,7 @@ def expandChildren(ID, level=0):
                 prefix = "    " * level
             prefix += "* "
             text = prefix +  textFromID(x["_id"])
-            if "references" in x and not(x["references"] == []):
+            if x.get("references", False) != []:
                 text += f' ^{x["_id"].replace("_", "-")}'
             if "\n" in text:
                 text = text.replace("\r", "\n")
@@ -205,25 +205,25 @@ def textFromID(ID, level = 0):
                 text += f'[{currText}]({item["url"]})'
             if (currText.strip() == ""):
                 text += currText
-            elif("q" in item and item["q"]):
+            elif(item.get("q", False)):
                 text += f'`{currText}`'
-            elif("b" in item and item["b"]):
-                if("h" in item and item["h"]):
+            elif(item.get("b", False)):
+                if(item.get("h", False)):
                     text += textHighlight(currText, item["h"], html = highlightToHTML)
                 else:
                     text += f'**{currText}**'
-            elif("x" in item and item["x"]):
+            elif(item.get("x", False)):
                 text = f'$${currText}$$'
-            elif("u" in item and item["u"]):
+            elif(item.get("u", False)):
                 text += currText
         else:
             print("ERROR at textFromID function for ID: " + ID)
 
     if level == 0:
         # level is used to disable recursive expansion, since tags don't need to be recursive
-        if (("typeParents" in dict and len(dict["typeParents"])>0) 
+        if ((len(dict.get("typeParents", []))>0) 
         and not ID in allDocID 
-        and not("forceIsFolder" in dict and  dict["forceIsFolder"])):
+        and not(dict.get("forceIsFolder", False))):
             text += addTags(dict)
     
     return text
@@ -289,7 +289,7 @@ def fence_HTMLtags(string):
 def parentFromID(ID):
     fileName = ""
     dict = dictFromID(ID)
-    if(ID in allDocID or ("parent" in dict and dict["parent"] == None)):
+    if(ID in allDocID or (dict.get("parent", False) == None)):
         fileName =  textFromID(ID)
     elif dict["parent"] in allDocID:
         filePath = getFilePath(ID)
