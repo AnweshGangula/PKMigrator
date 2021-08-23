@@ -15,7 +15,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 # user-input variables: ----------------------------------------
 jsonFile = "rem.json"
 # jsonPath = sys.argv[1]
-folderName = "Rem2Obs"
+folderName = "Rem2Obs-Vault"
 dailyDocsFolder = "Daily Documents"
 highlightToHTML = True # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 
@@ -208,17 +208,21 @@ def textFromID(ID, level = 0):
             currText = fence_HTMLtags(currText)
             if ("url" in item):
                 text += f'[{currText}]({item["url"]})'
+                continue
             if (currText.strip() == ""):
                 text += currText
-            elif(item.get("q", False)):
+                continue
+            if(item.get("q", False)):
                 text += f'`{currText}`'
-            elif(item.get("b", False)):
-                if(item.get("h", False)):
-                    text += textHighlight(currText, item["h"], html = highlightToHTML)
-                else:
-                    text += f'**{currText}**'
-            elif(item.get("x", False)):
+                continue
+            if(item.get("x", False)):
                 text = f'$${currText}$$'
+                continue
+            if(item.get("b", False)):
+                text += f'**{currText}**'
+                currText = text
+            if(item.get("h", False)):
+                text += textHighlight(currText, item["h"], html = highlightToHTML)
             elif(item.get("u", False)):
                 text += currText
         else:
@@ -267,7 +271,7 @@ def textHighlight(text, colorNum, html = False):
         color = switch(colorNum)
         text = f'<mark style=" background-color: {color}; ">{text}</mark>'
     else:
-        text = f'==**{text}**=='
+        text = f'=={text}=='
     
     return text
 
