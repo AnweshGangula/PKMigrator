@@ -15,7 +15,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 # user-input variables: ----------------------------------------
 jsonFile = "rem.json"
 # jsonPath = sys.argv[1]
-vaultName = "Rem2Obs-Vault"
+vaultName = "Rem2Obs"
 dailyDocsFolder = "Daily Documents"
 highlightToHTML = True # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 previewBlockRef = True
