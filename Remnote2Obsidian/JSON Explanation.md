@@ -5,6 +5,8 @@ ___
 
 > ## _TODO
 > * [x] Block Ref in folders need to include folder name (eg: `[[Folder/file#^blockID]]`)
+> * [x] Replace more than 2 newlines(\n) with only 2
+> * [ ] include portals in bullets
 > * [ ] Preserve the order of REM's as per Remnote Web app
 > * [ ] Remove unnecessary files outside my personal Remnote
 

@@ -20,6 +20,7 @@ dailyDocsFolder = "Daily Documents"
 highlightToHTML = True # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 
 re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
+re_newLine = re.compile("(\\n){3,}") # replace more than 2 newlines with only 2: https://regex101.com/r/9VAqaO/1/
 # ---------------------------------------------------------------
 
 jsonPath = os.path.join(dir_path, jsonFile)
@@ -80,7 +81,7 @@ def main():
         createFile(dict["_id"], Rem2ObsPath)
 
     timetaken = str(datetime.datetime.now() - start_time)
-    print(f"\nTime Taken to Generate Obsidian Vault - {folderName}: {timetaken}")
+    print(f"\nTime Taken to Generate '{folderName}' Obsidian Vault: {timetaken}")
     print("\n" + str(len(created)) + " files generated")
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
@@ -155,6 +156,7 @@ def expandChildren(ID, level=0):
                 text += f' ^{x["_id"].replace("_", "-")}'
             if "\n" in text:
                 text = text.replace("\r", "\n")
+                text = re.sub(re_newLine, r"\n\n", text)
                 text = text.replace("\n", "\n" + prefix.replace("*", " "))
             filteredChildren.append(text)
 
@@ -225,6 +227,9 @@ def textFromID(ID, level = 0):
         and not ID in allDocID 
         and not("forceIsFolder" in dict and  dict["forceIsFolder"])):
             text += addTags(dict)
+    
+    if text.startswith("```"):
+        text = text.replace("\r\n", "\n")
     
     return text
 
