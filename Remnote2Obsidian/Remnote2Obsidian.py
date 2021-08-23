@@ -15,15 +15,20 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 # user-input variables: ----------------------------------------
 jsonFile = "rem.json"
 # jsonPath = sys.argv[1]
-folderName = "Rem2Obs"
+vaultName = "Rem2Obs"
 dailyDocsFolder = "Daily Documents"
 highlightToHTML = True # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
+previewBlockRef = True
 
 re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
+re_newLine = re.compile("(\\n){3,}") # replace more than 2 newlines with only 2: https://regex101.com/r/9VAqaO/1/
 # ---------------------------------------------------------------
+pbr=""
+if previewBlockRef:
+    pbr = "!"
 
 jsonPath = os.path.join(dir_path, jsonFile)
-Rem2ObsPath = os.path.join(os.path.dirname(jsonPath), folderName)
+Rem2ObsPath = os.path.join(os.path.dirname(jsonPath), vaultName)
 os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
@@ -33,9 +38,9 @@ allParentRem = []
 # allFolders = []
 # topFolders = []
 for x in RemnoteDocs:
-    if("n" in x and  x["n"] == 1):
+    if(x.get("n", False) == 1):
         allParentRem.append(x)
-        if("rcrt" in x and x["rcrt"] == "d"):
+        if(x.get("rcrt", False) == "d"):
             # Convert Daily Documents to folder
             x["key"][0] = dailyDocsFolder
             x["forceIsFolder"] = True
@@ -48,7 +53,7 @@ for x in RemnoteDocs:
 def getAllDocs(RemList):
     IDlist = []
     for rem in RemList:
-        if "forceIsFolder" in rem and  rem["forceIsFolder"]:
+        if rem.get("forceIsFolder", False):
             childRem = []
             for child in rem["children"]:
                 dict = [x for x in RemnoteDocs if x["_id"] == child][0] 
@@ -80,7 +85,7 @@ def main():
         createFile(dict["_id"], Rem2ObsPath)
 
     timetaken = str(datetime.datetime.now() - start_time)
-    print(f"\nTime Taken to Generate Obsidian Vault: {timetaken}")
+    print(f"\nTime Taken to Generate '{vaultName}' Obsidian Vault: {timetaken}")
     print("\n" + str(len(created)) + " files generated")
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
@@ -91,7 +96,7 @@ def createFile(remID, remFolderPath):
         return
     remText = textFromID(remID)
     remDict = dictFromID(remID)
-    if "forceIsFolder" in remDict and remDict["forceIsFolder"]:
+    if remDict.get("forceIsFolder", False):
             newFilePath = os.path.join(remFolderPath, remText)
             for child in remDict["children"]:
                 createFile(child, newFilePath)
@@ -102,8 +107,11 @@ def createFile(remID, remFolderPath):
         # filename = re.sub('[^\w\-_\. ]', '_', filename)
         if(os.path.basename(remFolderPath) == dailyDocsFolder):
             # dailyDocName = datetime.datetime.strptime(filename, "%B %dth, %Y").date()
-            dailyDocName = dateParse(filename)
-            filename = dailyDocName.strftime("%Y-%m-%d")
+            try:
+                dailyDocName = dateParse(filename)
+                filename = dailyDocName.strftime("%Y-%m-%d")
+            except:
+                pass
             # fileTitle += " (" + filename + ")"
         filePath = os.path.join(remFolderPath, filename + ".md")
 
@@ -131,8 +139,8 @@ def ignoreRem(ID):
     or ("contains:" in dict["key"]) 
     or ("rcrp" in dict) 
     or ("rcrs" in dict) 
-    or ("rcrt" in dict and dict["rcrt"] != "c" and dict["rcrt"] != "d")
-    or ("type" in dict and dict["type"] == 6)):
+    or ("rcrt" in dict and dict.get("rcrt") != "c" and dict.get("rcrt") != "d")
+    or (dict.get("type", False) == 6)):
         return True
     else:
         return False
@@ -151,10 +159,11 @@ def expandChildren(ID, level=0):
                 prefix = "    " * level
             prefix += "* "
             text = prefix +  textFromID(x["_id"])
-            if "references" in x and not(x["references"] == []):
+            if "references" in x and x["references"] != []:
                 text += f' ^{x["_id"].replace("_", "-")}'
             if "\n" in text:
                 text = text.replace("\r", "\n")
+                text = re.sub(re_newLine, r"\n\n", text)
                 text = text.replace("\n", "\n" + prefix.replace("*", " "))
             filteredChildren.append(text)
 
@@ -193,9 +202,9 @@ def textFromID(ID, level = 0):
             if newID in allDocID:
                 text += f'[[{parentFromID(newID)}]]'
             else:
-                text += f'![[{parentFromID(newID)}#^{newID}]]'
+                text += f'{pbr}[[{parentFromID(newID)}#^{newID}]]'
         elif(item["i"] == "o"):
-            text += f'```{item["language"]}\n{item["text"]}\n  ```'
+            text += f'```{item.get("language", "")}\n{item["text"]}\n  ```'
         elif(item["i"] == "i" and "url" in item):
             text += f'![]({item["url"]})'
         elif(item["i"] == "m"):
@@ -203,28 +212,32 @@ def textFromID(ID, level = 0):
             currText = fence_HTMLtags(currText)
             if ("url" in item):
                 text += f'[{currText}]({item["url"]})'
-            if (currText.strip() == ""):
+            elif (currText.strip() == ""):
                 text += currText
-            elif("q" in item and item["q"]):
+            elif(item.get("q", False)):
                 text += f'`{currText}`'
-            elif("b" in item and item["b"]):
-                if("h" in item and item["h"]):
-                    text += textHighlight(currText, item["h"], html = highlightToHTML)
-                else:
-                    text += f'**{currText}**'
-            elif("x" in item and item["x"]):
+            elif(item.get("x", False)):
                 text = f'$${currText}$$'
-            elif("u" in item and item["u"]):
+            elif(item.get("b", False)):
+                text += f'**{currText}**'
+                if(item.get("h", False)):
+                    text = textHighlight(text, item["h"], html = highlightToHTML) # note that we used "text =" not "text +="
+            elif(item.get("h", False)):
+                text += textHighlight(currText, item["h"], html = highlightToHTML)
+            elif(item.get("u", False)):
                 text += currText
         else:
             print("ERROR at textFromID function for ID: " + ID)
 
     if level == 0:
         # level is used to disable recursive expansion, since tags don't need to be recursive
-        if (("typeParents" in dict and len(dict["typeParents"])>0) 
+        if ((len(dict.get("typeParents", []))>0) 
         and not ID in allDocID 
-        and not("forceIsFolder" in dict and  dict["forceIsFolder"])):
+        and not(dict.get("forceIsFolder", False))):
             text += addTags(dict)
+    
+    if text.startswith("```"):
+        text = text.replace("\r\n", "\n")
     
     return text
 
@@ -249,8 +262,8 @@ def textHighlight(text, colorNum, html = False):
                 2 : "darkorange",
                 3 : "goldenrod",
                 4 : "seagreen",
-                5 : "steelblue",
-                6 : "rebeccapurple",
+                5 : "rebeccapurple",
+                6 : "steelblue",
             }
             
             color = colorList.get(x, "")
@@ -259,7 +272,7 @@ def textHighlight(text, colorNum, html = False):
         color = switch(colorNum)
         text = f'<mark style=" background-color: {color}; ">{text}</mark>'
     else:
-        text = f'==**{text}**=='
+        text = f'=={text}=='
     
     return text
 
@@ -289,14 +302,26 @@ def fence_HTMLtags(string):
 def parentFromID(ID):
     fileName = ""
     dict = dictFromID(ID)
-    if(ID in allDocID or ("parent" in dict and dict["parent"] == None)):
+    if(ID in allDocID or (dict.get("parent", False) == None)):
         fileName =  textFromID(ID)
     elif dict["parent"] in allDocID:
-        fileName = textFromID(dict["parent"])
+        filePath = getFilePath(ID)
+        filePath.reverse()
+        fileName = "/".join(filePath)
     else:
         fileName = parentFromID(dict["parent"])
 
     return fileName
+
+
+def getFilePath(ID):
+    pathList = []
+    dict = dictFromID(ID)
+    if dict != [] and dict.get("parent", None) != None:
+        pathList.append(textFromID(dict["parent"]))
+        pathList.extend(getFilePath(dict["parent"]))
+
+    return pathList
 
 if __name__ == '__main__':
     main()
