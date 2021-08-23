@@ -103,8 +103,11 @@ def createFile(remID, remFolderPath):
         # filename = re.sub('[^\w\-_\. ]', '_', filename)
         if(os.path.basename(remFolderPath) == dailyDocsFolder):
             # dailyDocName = datetime.datetime.strptime(filename, "%B %dth, %Y").date()
-            dailyDocName = dateParse(filename)
-            filename = dailyDocName.strftime("%Y-%m-%d")
+            try:
+                dailyDocName = dateParse(filename)
+                filename = dailyDocName.strftime("%Y-%m-%d")
+            except:
+                pass
             # fileTitle += " (" + filename + ")"
         filePath = os.path.join(remFolderPath, filename + ".md")
 
@@ -197,7 +200,7 @@ def textFromID(ID, level = 0):
             else:
                 text += f'![[{parentFromID(newID)}#^{newID}]]'
         elif(item["i"] == "o"):
-            text += f'```{item["language"]}\n{item["text"]}\n  ```'
+            text += f'```{item.get("language", "")}\n{item["text"]}\n  ```'
         elif(item["i"] == "i" and "url" in item):
             text += f'![]({item["url"]})'
         elif(item["i"] == "m"):

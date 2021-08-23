@@ -4,13 +4,13 @@ If your rem.json file is too large, VS Code may not be able to prettify it. You 
 ___
 
 > ## _TODO
-> * [x] Block Ref in folders need to include folder name (eg: `[[Folder/file#^blockID]]`)
-> * [x] Replace more than 2 newlines(\n) with only 2
 > * [ ] include portals in bullets
 > * [ ] Preserve the order of REM's as per Remnote Web app
 > * [ ] Remove unnecessary files outside my personal Remnote
 
 ## DONE
+> * [x] Block Ref in folders need to include folder name (eg: `[[Folder/file#^blockID]]`)
+> * [x] Replace more than 2 newlines(\n) with only 2
 > * [x] Add TODO's into Bullets - `"t": {` 
 > * [x] Parent-Level files without `children` or `portals` or `references` or `typeChildren` need to be removed
 > * [x] Tagged REM are not referenced anywhere - convert them to Block Ref's - Example: **Essential PC App**
