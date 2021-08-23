@@ -15,16 +15,20 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 # user-input variables: ----------------------------------------
 jsonFile = "rem.json"
 # jsonPath = sys.argv[1]
-folderName = "Rem2Obs"
+vaultName = "Rem2Obs-Vault"
 dailyDocsFolder = "Daily Documents"
 highlightToHTML = True # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
+previewBlockRef = True
 
 re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
 re_newLine = re.compile("(\\n){3,}") # replace more than 2 newlines with only 2: https://regex101.com/r/9VAqaO/1/
 # ---------------------------------------------------------------
+pbr=""
+if previewBlockRef:
+    pbr = "!"
 
 jsonPath = os.path.join(dir_path, jsonFile)
-Rem2ObsPath = os.path.join(os.path.dirname(jsonPath), folderName)
+Rem2ObsPath = os.path.join(os.path.dirname(jsonPath), vaultName)
 os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
@@ -81,7 +85,7 @@ def main():
         createFile(dict["_id"], Rem2ObsPath)
 
     timetaken = str(datetime.datetime.now() - start_time)
-    print(f"\nTime Taken to Generate '{folderName}' Obsidian Vault: {timetaken}")
+    print(f"\nTime Taken to Generate '{vaultName}' Obsidian Vault: {timetaken}")
     print("\n" + str(len(created)) + " files generated")
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
@@ -155,7 +159,7 @@ def expandChildren(ID, level=0):
                 prefix = "    " * level
             prefix += "* "
             text = prefix +  textFromID(x["_id"])
-            if x.get("references", False) != []:
+            if "references" in x and x["references"] != []:
                 text += f' ^{x["_id"].replace("_", "-")}'
             if "\n" in text:
                 text = text.replace("\r", "\n")
@@ -198,7 +202,7 @@ def textFromID(ID, level = 0):
             if newID in allDocID:
                 text += f'[[{parentFromID(newID)}]]'
             else:
-                text += f'![[{parentFromID(newID)}#^{newID}]]'
+                text += f'{pbr}[[{parentFromID(newID)}#^{newID}]]'
         elif(item["i"] == "o"):
             text += f'```{item.get("language", "")}\n{item["text"]}\n  ```'
         elif(item["i"] == "i" and "url" in item):
@@ -208,17 +212,18 @@ def textFromID(ID, level = 0):
             currText = fence_HTMLtags(currText)
             if ("url" in item):
                 text += f'[{currText}]({item["url"]})'
-            if (currText.strip() == ""):
+            elif (currText.strip() == ""):
                 text += currText
             elif(item.get("q", False)):
                 text += f'`{currText}`'
-            elif(item.get("b", False)):
-                if(item.get("h", False)):
-                    text += textHighlight(currText, item["h"], html = highlightToHTML)
-                else:
-                    text += f'**{currText}**'
             elif(item.get("x", False)):
                 text = f'$${currText}$$'
+            elif(item.get("b", False)):
+                text += f'**{currText}**'
+                if(item.get("h", False)):
+                    text = textHighlight(text, item["h"], html = highlightToHTML) # note that we used "text =" not "text +="
+            elif(item.get("h", False)):
+                text += textHighlight(currText, item["h"], html = highlightToHTML)
             elif(item.get("u", False)):
                 text += currText
         else:
@@ -257,8 +262,8 @@ def textHighlight(text, colorNum, html = False):
                 2 : "darkorange",
                 3 : "goldenrod",
                 4 : "seagreen",
-                5 : "steelblue",
-                6 : "rebeccapurple",
+                5 : "rebeccapurple",
+                6 : "steelblue",
             }
             
             color = colorList.get(x, "")
@@ -267,7 +272,7 @@ def textHighlight(text, colorNum, html = False):
         color = switch(colorNum)
         text = f'<mark style=" background-color: {color}; ">{text}</mark>'
     else:
-        text = f'==**{text}**=='
+        text = f'=={text}=='
     
     return text
 
