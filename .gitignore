@@ -1,5 +1,6 @@
 # Custom ignore file
 *.pyc
+.obsidian
 
 
 # Default ignore files

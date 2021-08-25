@@ -1,6 +1,6 @@
 # rem.json Observations
 
-If your rem.json file is too large, VS Code may not be able to prettify it. You can [use python](https://stackoverflow.com/questions/19875218/best-way-to-format-large-json-file-30-mb) instead to prettify it: `type rem.json | python -mjson.tool > pretty.json`
+If your rem.json file is too large, VS Code may not be able to prettify it. You can [use python](https://stackoverflow.com/questions/19875218/best-way-to-format-large-json-file-30-mb) instead to prettify it: `type rem.json | python -mjson.tool > prettyRem.json`
 ___
 
 > ## _TODO
@@ -92,7 +92,8 @@ ___
         * `t.s`: Status: Unfinished
         * `l.a`: Aliases
 * Objects with `"type": 2,` as a property are rems' with spaced repitition feature
-* Objects with `"type": 6` as property are either blank (`"key":[]`) or additional Block Ref Rem - Can be ignored
+* Objects with `"type": 6` as property are either blank (`"key":[]`) or additional Block Ref Rem.
+>   * TODO: check if these(`"type": 6`) are portals
 * Objects with `"i": "o"` arer code blocks. They follow the below pattern:
     ```
                 "key": [
