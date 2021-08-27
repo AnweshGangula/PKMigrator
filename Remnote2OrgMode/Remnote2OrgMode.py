@@ -118,12 +118,12 @@ def createFile(remID, remFolderPath):
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
                 child = expandChildren(remID)
-                if child == []:
-                    raise ValueError(filename + '.org File doesnt have any content')
-                    return
+                # if child == []:
+                #     # if there are not children, do not generate file (could cause issues with REM that are referenced without any actual content)
+                #     raise ValueError(filename + '.org File doesnt have any content')
                 expandBullets = "\n".join(child)
 
-                f.write("# " + fileTitle + "\n" + expandBullets)
+                f.write("#+TITLE:" + fileTitle + "\n" + expandBullets)
             # print(f'{remText}.org created')
             created.append("ID: " + remID + ",  Name: " + filename)
         except Exception as e:
@@ -155,13 +155,13 @@ def expandChildren(ID, level=0):
     childData = [x for x in RemnoteDocs if x["_id"] in childID]
     for x in childData:
         if not ignoreRem(x["_id"]):
+            text = textFromID(x["_id"])
             prefix = ""
             if level >= 1:
-                prefix = "    " * level
+                prefix = "*" * level
             prefix += "* "
-            text = textFromID(x["_id"])
             if text.startswith("#+BEGIN_SRC"):
-                prefix = prefix.replace("*", "")
+                prefix = prefix.replace("*", " ")
             text = prefix + text
             if "references" in x and x["references"] != []:
                 text += f' ^{x["_id"].replace("_", "-")}'
@@ -193,9 +193,9 @@ def textFromID(ID, level = 0):
 
     todoStatus = getTODO(dict)
     if todoStatus == "Finished":
-        text += "[x] "
+        text += "DONE "
     elif todoStatus == "Unfinished":
-        text += "[ ] "
+        text += "TODO "
 
     for item in key:
         if(isinstance(item, str)):
@@ -206,6 +206,7 @@ def textFromID(ID, level = 0):
             if newID in allDocID:
                 text += f'[[{parentFromID(newID)}]]'
             else:
+                # TODO Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
                 text += f'{pbr}[[{parentFromID(newID)}#^{newID}]]'
         elif(item["i"] == "o"):
             text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "Org mode").title())}\n{item["text"]}\n#+END_SRC' ## using "org" as a fallback language
@@ -215,7 +216,7 @@ def textFromID(ID, level = 0):
             currText = item["text"]
             currText = fence_HTMLtags(currText)
             if ("url" in item):
-                text += f'[{currText}]({item["url"]})'
+                text += f'[[{item["url"]}][{currText}]]'
             elif (currText.strip() == ""):
                 text += currText
             elif(item.get("q", False)):
@@ -238,7 +239,7 @@ def textFromID(ID, level = 0):
         if ((len(dict.get("typeParents", []))>0) 
         and not ID in allDocID 
         and not(dict.get("forceIsFolder", False))):
-            text += addTags(dict)
+            text += convertTags(dict)
     
     if text.startswith("#+BEGIN_SRC"):
         text = text.replace("\r\n", "\n")
@@ -246,13 +247,13 @@ def textFromID(ID, level = 0):
     return text
 
 
-def addTags(dict):
+def convertTags(dict):
     text = ""
     for x in dict["typeParents"]:
         if not ignoreRem(x):
             textExtract = textFromID(x, level = 1).strip()
             textExtract = re.sub(r'[^A-Za-z0-9-]+', '_', textExtract)
-            text += f' #{textExtract}'
+            text += f' [[file:{textExtract}.org][{textExtract}]]'
         
     return text
 
