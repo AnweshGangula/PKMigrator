@@ -118,6 +118,9 @@ def createFile(remID, remFolderPath):
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
                 child = expandChildren(remID)
+                # if child == []:
+                #     # if there are not children, do not generate file (could cause issues with REM that are referenced without any actual content)
+                #     raise ValueError(filename + '.org File doesnt have any content')
                 expandBullets = "\n".join(child)
 
                 f.write("# " + fileTitle + "\n" + expandBullets)
@@ -134,7 +137,9 @@ def ignoreRem(ID):
     # TODO: add more ignore ID's
     ignoreID = ["9onq37x6PbsFxvRqu", "6sz2MJeFLZoTRQofZ"]
     dict = dictFromID(ID)
-    if(dict == []
+    if (dict.get("type") == 6 and not ignoreRem(dict["parent"])):
+        return False
+    elif(dict == []
     or dict["key"] == [] 
     or ("contains:" in dict["key"]) 
     or ("rcrp" in dict) 
@@ -203,6 +208,9 @@ def textFromID(ID, level = 0):
                 text += f'[[{parentFromID(newID)}]]'
             else:
                 text += f'{pbr}[[{parentFromID(newID)}#^{newID}]]'
+        elif dict.get("type") == 6:
+            subBlock = dict["subBlocks"][0]
+            text += f'{pbr}[[{parentFromID(subBlock)}#^{subBlock}]]'
         elif(item["i"] == "o"):
             text += f'```{item.get("language", "")}\n{item["text"]}\n  ```'
         elif(item["i"] == "i" and "url" in item):
