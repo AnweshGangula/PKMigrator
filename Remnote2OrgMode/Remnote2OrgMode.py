@@ -15,9 +15,9 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 # user-input variables: ----------------------------------------
 jsonFile = "rem.json"
 # jsonPath = sys.argv[1]
-vaultName = "Rem2Org"
+OrgRootFolder = "Rem2Org"
 dailyDocsFolder = "Daily Documents"
-highlightToHTML = True # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
+highlightToHTML = False # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 previewBlockRef = True
 
 re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
@@ -28,7 +28,7 @@ if previewBlockRef:
     pbr = "!"
 
 jsonPath = os.path.join(dir_path, jsonFile)
-Rem2ObsPath = os.path.join(os.path.dirname(jsonPath), vaultName)
+Rem2ObsPath = os.path.join(os.path.dirname(jsonPath), OrgRootFolder)
 os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
@@ -85,7 +85,7 @@ def main():
         createFile(dict["_id"], Rem2ObsPath)
 
     timetaken = str(datetime.datetime.now() - start_time)
-    print(f"\nTime Taken to Generate '{vaultName}' Obsidian Vault: {timetaken}")
+    print(f"\nTime Taken to Generate '{OrgRootFolder}' Org-Mode Folder: {timetaken}")
     print("\n" + str(len(created)) + " files generated")
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
@@ -118,6 +118,9 @@ def createFile(remID, remFolderPath):
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
                 child = expandChildren(remID)
+                if child == []:
+                    raise ValueError(filename + '.org File doesnt have any content')
+                    return
                 expandBullets = "\n".join(child)
 
                 f.write("# " + fileTitle + "\n" + expandBullets)
@@ -127,7 +130,6 @@ def createFile(remID, remFolderPath):
             # print(e)
             notCreated.append("ID: " + remID + ",  Name: " + filename)
             # print("\ncannot create file with ID: " + remID + ", Name: "+ filename + "\n")
-
 
 
 def ignoreRem(ID):
@@ -150,7 +152,6 @@ def expandChildren(ID, level=0):
     childID = [x["children"] for x in RemnoteDocs if x["_id"] == ID][0]
     filteredChildren = []
     text = ""
-
     childData = [x for x in RemnoteDocs if x["_id"] in childID]
     for x in childData:
         if not ignoreRem(x["_id"]):
@@ -158,7 +159,10 @@ def expandChildren(ID, level=0):
             if level >= 1:
                 prefix = "    " * level
             prefix += "* "
-            text = prefix +  textFromID(x["_id"])
+            text = textFromID(x["_id"])
+            if text.startswith("#+BEGIN_SRC"):
+                prefix = prefix.replace("*", "")
+            text = prefix + text
             if "references" in x and x["references"] != []:
                 text += f' ^{x["_id"].replace("_", "-")}'
             if "\n" in text:
@@ -204,7 +208,7 @@ def textFromID(ID, level = 0):
             else:
                 text += f'{pbr}[[{parentFromID(newID)}#^{newID}]]'
         elif(item["i"] == "o"):
-            text += f'```{item.get("language", "")}\n{item["text"]}\n  ```'
+            text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "Org mode").title())}\n{item["text"]}\n#+END_SRC' ## using "org" as a fallback language
         elif(item["i"] == "i" and "url" in item):
             text += f'![]({item["url"]})'
         elif(item["i"] == "m"):
@@ -236,7 +240,7 @@ def textFromID(ID, level = 0):
         and not(dict.get("forceIsFolder", False))):
             text += addTags(dict)
     
-    if text.startswith("```"):
+    if text.startswith("#+BEGIN_SRC"):
         text = text.replace("\r\n", "\n")
     
     return text
@@ -322,6 +326,13 @@ def getFilePath(ID):
         pathList.extend(getFilePath(dict["parent"]))
 
     return pathList
+
+def getOrgLanguage(lang):
+    langJsonPath = os.path.join(dir_path, "orgLanguages.json")
+    langList = json.load(open(langJsonPath, mode="rt", encoding="utf-8", errors="ignore"))
+    identifier = langList[lang]
+
+    return identifier
 
 if __name__ == '__main__':
     main()
