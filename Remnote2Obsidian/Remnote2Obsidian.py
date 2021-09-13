@@ -75,6 +75,7 @@ def getAllDocs(RemList):
     return IDlist
 
 allDocID = getAllDocs(allParentRem)
+allDocID = list(set(allDocID) - set(ignoreID))
 # allDocID is used in textFromID function
 
 created = []
@@ -102,9 +103,9 @@ def createFile(remID, remFolderPath):
     remText = textFromID(remID)
     remDict = dictFromID(remID)
     if remDict.get("forceIsFolder", False):
-            newFilePath = os.path.join(remFolderPath, remText)
-            for child in remDict["children"]:
-                createFile(child, newFilePath)
+        newFilePath = os.path.join(remFolderPath, remText)
+        for child in remDict["children"]:
+            createFile(child, newFilePath)
     else:
         os.makedirs(remFolderPath, exist_ok=True)
         filename = remText
