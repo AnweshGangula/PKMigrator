@@ -33,12 +33,17 @@ os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
 RemnoteDocs = remnoteJSON["docs"]
+ignoreKey = ["Remnote Default"]
+ignoreID = ["9onq37x6PbsFxvRqu", "6sz2MJeFLZoTRQofZ"]
 
 allParentRem = []
 # allFolders = []
 # topFolders = []
 for x in RemnoteDocs:
-    if(x.get("n", False) == 1):
+    if(x.get("n", False) == 1 and
+     x.get("_id", False) not in ignoreID and
+     x["key"] != [] and
+     x["key"][0] not in ignoreKey):
         allParentRem.append(x)
         if(x.get("rcrt", False) == "d"):
             # Convert Daily Documents to folder
@@ -118,9 +123,6 @@ def createFile(remID, remFolderPath):
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
                 child = expandChildren(remID)
-                # if child == []:
-                #     # if there are not children, do not generate file (could cause issues with REM that are referenced without any actual content)
-                #     raise ValueError(filename + '.org File doesnt have any content')
                 expandBullets = "\n".join(child)
 
                 f.write("# " + fileTitle + "\n" + expandBullets)
@@ -135,11 +137,8 @@ def createFile(remID, remFolderPath):
 
 def ignoreRem(ID):
     # TODO: add more ignore ID's
-    ignoreID = ["9onq37x6PbsFxvRqu", "6sz2MJeFLZoTRQofZ"]
     dict = dictFromID(ID)
-    if (dict.get("type") == 6 and not ignoreRem(dict["parent"])):
-        return False
-    elif(dict == []
+    if(dict == []
     or dict["key"] == [] 
     or ("contains:" in dict["key"]) 
     or ("rcrp" in dict) 
@@ -162,14 +161,14 @@ def expandChildren(ID, level=0):
             prefix = ""
             if level >= 1:
                 prefix = "    " * level
-            prefix += "* "
+            prefix += "- "
             text = prefix +  textFromID(x["_id"])
             if "references" in x and x["references"] != []:
                 text += f' ^{x["_id"].replace("_", "-")}'
             if "\n" in text:
                 text = text.replace("\r", "\n")
                 text = re.sub(re_newLine, r"\n\n", text)
-                text = text.replace("\n", "\n" + prefix.replace("*", " "))
+                text = text.replace("\n", "\n" + prefix.replace("-", " "))
             filteredChildren.append(text)
 
             filteredChildren.extend(expandChildren(x["_id"], level + 1 ))
@@ -208,9 +207,6 @@ def textFromID(ID, level = 0):
                 text += f'[[{parentFromID(newID)}]]'
             else:
                 text += f'{pbr}[[{parentFromID(newID)}#^{newID}]]'
-        elif dict.get("type") == 6:
-            subBlock = dict["subBlocks"][0]
-            text += f'{pbr}[[{parentFromID(subBlock)}#^{subBlock}]]'
         elif(item["i"] == "o"):
             text += f'```{item.get("language", "")}\n{item["text"]}\n  ```'
         elif(item["i"] == "i" and "url" in item):
@@ -219,7 +215,7 @@ def textFromID(ID, level = 0):
             currText = item["text"]
             currText = fence_HTMLtags(currText)
             if ("url" in item):
-                text += f'[{currText}]({item["url"]})'
+                text += f'[{currText.strip()}]({item["url"]})'
             elif (currText.strip() == ""):
                 text += currText
             elif(item.get("q", False)):
