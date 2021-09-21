@@ -163,8 +163,9 @@ def expandChildren(ID, level=0):
             if text.startswith("#+BEGIN_SRC"):
                 prefix = prefix.replace("*", " ")
             text = prefix + text
-            if "references" in x and x["references"] != []:
-                text += f' ^{x["_id"].replace("_", "-")}'
+            # if "references" in x and x["references"] != []:
+            #     # this is not necessary in org-mode
+            #     text += f' ^{x["_id"].replace("_", "-")}'
             if "\n" in text:
                 text = text.replace("\r", "\n")
                 text = re.sub(re_newLine, r"\n\n", text)
@@ -204,10 +205,10 @@ def textFromID(ID, level = 0):
             newDict = dictFromID(item["_id"])
             newID = newDict["_id"]
             if newID in allDocID:
-                text += f'[[{parentFromID(newID)}]]'
+                text += f'[[file:{parentFromID(newID)}.org][{textFromID(newID)}]]'
             else:
                 # TODO Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
-                text += f'{pbr}[[{parentFromID(newID)}#^{newID}]]'
+                text += f'[[file:{parentFromID(newID).rpartition("/")[0]}.org::*{textFromID(newID)}][{textFromID(newID)}]]'
         elif(item["i"] == "o"):
             text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "Org mode").title())}\n{item["text"]}\n#+END_SRC' ## using "org" as a fallback language
         elif(item["i"] == "i" and "url" in item):
@@ -216,7 +217,7 @@ def textFromID(ID, level = 0):
             currText = item["text"]
             currText = fence_HTMLtags(currText)
             if ("url" in item):
-                text += f'[[{item["url"]}][{currText}]]'
+                text += f'[[{item["url"]}][{currText.strip()}]]'
             elif (currText.strip() == ""):
                 text += currText
             elif(item.get("q", False)):
@@ -307,14 +308,14 @@ def fence_HTMLtags(string):
 def parentFromID(ID):
     fileName = ""
     dict = dictFromID(ID)
-    if(ID in allDocID or (dict.get("parent", False) == None)):
-        fileName =  textFromID(ID)
-    elif dict["parent"] in allDocID:
+    fileName = ""
+
+    if dict["parent"] in allDocID:
         filePath = getFilePath(ID)
         filePath.reverse()
-        fileName = "/".join(filePath)
-    else:
-        fileName = parentFromID(dict["parent"])
+        fileName = "/".join(filePath) + "/"
+
+    fileName += textFromID(ID)
 
     return fileName
 
