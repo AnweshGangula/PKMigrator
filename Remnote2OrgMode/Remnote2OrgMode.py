@@ -90,7 +90,7 @@ def main():
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
 
-def createFile(remID, remFolderPath):
+def createFile(remID, remFolderPath, pathLevel=0):
     # this is recursive function, so cannot be moved directly to main() function
     if ignoreRem(remID):
         return
@@ -99,7 +99,7 @@ def createFile(remID, remFolderPath):
     if remDict.get("forceIsFolder", False):
             newFilePath = os.path.join(remFolderPath, remText)
             for child in remDict["children"]:
-                createFile(child, newFilePath)
+                createFile(child, newFilePath, pathLevel + 1)
     else:
         os.makedirs(remFolderPath, exist_ok=True)
         filename = remText
@@ -117,7 +117,7 @@ def createFile(remID, remFolderPath):
 
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
-                child = expandChildren(remID)
+                child = expandChildren(remID, pathLevel = pathLevel)
                 # if child == []:
                 #     # if there are not children, do not generate file (could cause issues with REM that are referenced without any actual content)
                 #     raise ValueError(filename + '.org File doesnt have any content')
@@ -148,14 +148,14 @@ def ignoreRem(ID):
         return False
 
 
-def expandChildren(ID, level=0):
+def expandChildren(ID, level=0, pathLevel = 0):
     childID = [x["children"] for x in RemnoteDocs if x["_id"] == ID][0]
     filteredChildren = []
     text = ""
     childData = [x for x in RemnoteDocs if x["_id"] in childID]
     for x in childData:
         if not ignoreRem(x["_id"]):
-            text = textFromID(x["_id"])
+            text = textFromID(x["_id"], pathLevel = pathLevel)
             prefix = ""
             if level >= 1:
                 prefix = "*" * level
@@ -172,7 +172,7 @@ def expandChildren(ID, level=0):
                 text = text.replace("\n", "\n" + prefix.replace("*", " "))
             filteredChildren.append(text)
 
-            filteredChildren.extend(expandChildren(x["_id"], level + 1 ))
+            filteredChildren.extend(expandChildren(x["_id"], level = level + 1 ))
 
     return filteredChildren
 
@@ -187,7 +187,7 @@ def dictFromID(ID):
         pass
     return dict
 
-def textFromID(ID, level = 0):
+def textFromID(ID, level = 0, pathLevel = 0):
     dict = dictFromID(ID)
     key = dict["key"]
     text = ""
@@ -204,15 +204,19 @@ def textFromID(ID, level = 0):
         elif(item["i"] == "q" and "_id" in item):
             newDict = dictFromID(item["_id"])
             newID = newDict["_id"]
+            # TODO parentPath needs to be corrected - for paths in same parent folder, this still adds all folders
+            parentPath = parentFromID(newID)
+            IDtext = textFromID(newID).replace("[","\[").replace("]","\]")
+            refPrefix = "file:" + ("../"*pathLevel)
             if newID in allDocID:
-                text += f'[[file:{parentFromID(newID)}.org][{textFromID(newID)}]]'
+                text += f'[[{refPrefix}{parentPath}.org][{IDtext}]]'
             else:
                 # TODO Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
-                text += f'[[file:{parentFromID(newID).rpartition("/")[0]}.org::*{textFromID(newID)}][{textFromID(newID)}]]'
+                text += f'[[{refPrefix}{parentPath}.org::*{IDtext}][{IDtext}]]'
         elif(item["i"] == "o"):
             text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "Org mode").title())}\n{item["text"]}\n#+END_SRC' ## using "org" as a fallback language
         elif(item["i"] == "i" and "url" in item):
-            text += f'![]({item["url"]})'
+            text += f'[[{item["url"]}]]'
         elif(item["i"] == "m"):
             currText = item["text"]
             currText = fence_HTMLtags(currText)
@@ -221,11 +225,11 @@ def textFromID(ID, level = 0):
             elif (currText.strip() == ""):
                 text += currText
             elif(item.get("q", False)):
-                text += f'`{currText}`'
+                text += f'~{currText}~'
             elif(item.get("x", False)):
                 text = f'$${currText}$$'
             elif(item.get("b", False)):
-                text += f'**{currText}**'
+                text += f'*{currText}*'
                 if(item.get("h", False)):
                     text = textHighlight(text, item["h"], html = highlightToHTML) # note that we used "text =" not "text +="
             elif(item.get("h", False)):
@@ -308,14 +312,12 @@ def fence_HTMLtags(string):
 def parentFromID(ID):
     fileName = ""
     dict = dictFromID(ID)
-    fileName = ""
-
-    if dict["parent"] in allDocID:
+    if(ID in allDocID):
         filePath = getFilePath(ID)
         filePath.reverse()
-        fileName = "/".join(filePath) + "/"
-
-    fileName += textFromID(ID)
+        fileName = "/".join(filePath) + "/" + textFromID(ID)
+    else:
+        fileName = parentFromID(dict["parent"])
 
     return fileName
 
