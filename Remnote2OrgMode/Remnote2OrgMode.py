@@ -90,7 +90,7 @@ def main():
     print(str(len(notCreated)) + " file/s listed below could not be generated\n" + "\n".join(notCreated)) if len(notCreated)>0 else None
 
 
-def createFile(remID, remFolderPath):
+def createFile(remID, remFolderPath, pathLevel=0):
     # this is recursive function, so cannot be moved directly to main() function
     if ignoreRem(remID):
         return
@@ -99,7 +99,7 @@ def createFile(remID, remFolderPath):
     if remDict.get("forceIsFolder", False):
             newFilePath = os.path.join(remFolderPath, remText)
             for child in remDict["children"]:
-                createFile(child, newFilePath)
+                createFile(child, newFilePath, pathLevel + 1)
     else:
         os.makedirs(remFolderPath, exist_ok=True)
         filename = remText
@@ -117,13 +117,13 @@ def createFile(remID, remFolderPath):
 
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
-                child = expandChildren(remID)
-                if child == []:
-                    raise ValueError(filename + '.org File doesnt have any content')
-                    return
+                child = expandChildren(remID, pathLevel = pathLevel)
+                # if child == []:
+                #     # if there are not children, do not generate file (could cause issues with REM that are referenced without any actual content)
+                #     raise ValueError(filename + '.org File doesnt have any content')
                 expandBullets = "\n".join(child)
 
-                f.write("# " + fileTitle + "\n" + expandBullets)
+                f.write("#+TITLE:" + fileTitle + "\n" + expandBullets)
             # print(f'{remText}.org created')
             created.append("ID: " + remID + ",  Name: " + filename)
         except Exception as e:
@@ -148,30 +148,31 @@ def ignoreRem(ID):
         return False
 
 
-def expandChildren(ID, level=0):
+def expandChildren(ID, level=0, pathLevel = 0):
     childID = [x["children"] for x in RemnoteDocs if x["_id"] == ID][0]
     filteredChildren = []
     text = ""
     childData = [x for x in RemnoteDocs if x["_id"] in childID]
     for x in childData:
         if not ignoreRem(x["_id"]):
+            text = textFromID(x["_id"], pathLevel = pathLevel)
             prefix = ""
             if level >= 1:
-                prefix = "    " * level
+                prefix = "*" * level
             prefix += "* "
-            text = textFromID(x["_id"])
             if text.startswith("#+BEGIN_SRC"):
-                prefix = prefix.replace("*", "")
+                prefix = prefix.replace("*", " ")
             text = prefix + text
-            if "references" in x and x["references"] != []:
-                text += f' ^{x["_id"].replace("_", "-")}'
+            # if "references" in x and x["references"] != []:
+            #     # this is not necessary in org-mode
+            #     text += f' ^{x["_id"].replace("_", "-")}'
             if "\n" in text:
                 text = text.replace("\r", "\n")
                 text = re.sub(re_newLine, r"\n\n", text)
                 text = text.replace("\n", "\n" + prefix.replace("*", " "))
             filteredChildren.append(text)
 
-            filteredChildren.extend(expandChildren(x["_id"], level + 1 ))
+            filteredChildren.extend(expandChildren(x["_id"], level = level + 1 ))
 
     return filteredChildren
 
@@ -186,16 +187,16 @@ def dictFromID(ID):
         pass
     return dict
 
-def textFromID(ID, level = 0):
+def textFromID(ID, level = 0, pathLevel = 0):
     dict = dictFromID(ID)
     key = dict["key"]
     text = ""
 
     todoStatus = getTODO(dict)
     if todoStatus == "Finished":
-        text += "[x] "
+        text += "DONE "
     elif todoStatus == "Unfinished":
-        text += "[ ] "
+        text += "TODO "
 
     for item in key:
         if(isinstance(item, str)):
@@ -203,27 +204,32 @@ def textFromID(ID, level = 0):
         elif(item["i"] == "q" and "_id" in item):
             newDict = dictFromID(item["_id"])
             newID = newDict["_id"]
+            # TODO parentPath needs to be corrected - for paths in same parent folder, this still adds all folders
+            parentPath = parentFromID(newID)
+            IDtext = textFromID(newID).replace("[","\[").replace("]","\]")
+            refPrefix = "file:" + ("../"*pathLevel)
             if newID in allDocID:
-                text += f'[[{parentFromID(newID)}]]'
+                text += f'[[{refPrefix}{parentPath}.org][{IDtext}]]'
             else:
-                text += f'{pbr}[[{parentFromID(newID)}#^{newID}]]'
+                # TODO Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
+                text += f'[[{refPrefix}{parentPath}.org::*{IDtext}][{IDtext}]]'
         elif(item["i"] == "o"):
             text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "Org mode").title())}\n{item["text"]}\n#+END_SRC' ## using "org" as a fallback language
         elif(item["i"] == "i" and "url" in item):
-            text += f'![]({item["url"]})'
+            text += f'[[{item["url"]}]]'
         elif(item["i"] == "m"):
             currText = item["text"]
             currText = fence_HTMLtags(currText)
             if ("url" in item):
-                text += f'[{currText}]({item["url"]})'
+                text += f'[[{item["url"]}][{currText.strip()}]]'
             elif (currText.strip() == ""):
                 text += currText
             elif(item.get("q", False)):
-                text += f'`{currText}`'
+                text += f'~{currText}~'
             elif(item.get("x", False)):
                 text = f'$${currText}$$'
             elif(item.get("b", False)):
-                text += f'**{currText}**'
+                text += f'*{currText}*'
                 if(item.get("h", False)):
                     text = textHighlight(text, item["h"], html = highlightToHTML) # note that we used "text =" not "text +="
             elif(item.get("h", False)):
@@ -238,7 +244,7 @@ def textFromID(ID, level = 0):
         if ((len(dict.get("typeParents", []))>0) 
         and not ID in allDocID 
         and not(dict.get("forceIsFolder", False))):
-            text += addTags(dict)
+            text += convertTags(dict)
     
     if text.startswith("#+BEGIN_SRC"):
         text = text.replace("\r\n", "\n")
@@ -246,13 +252,13 @@ def textFromID(ID, level = 0):
     return text
 
 
-def addTags(dict):
+def convertTags(dict):
     text = ""
     for x in dict["typeParents"]:
         if not ignoreRem(x):
             textExtract = textFromID(x, level = 1).strip()
             textExtract = re.sub(r'[^A-Za-z0-9-]+', '_', textExtract)
-            text += f' #{textExtract}'
+            text += f' [[file:{textExtract}.org][{textExtract}]]'
         
     return text
 
@@ -306,12 +312,10 @@ def fence_HTMLtags(string):
 def parentFromID(ID):
     fileName = ""
     dict = dictFromID(ID)
-    if(ID in allDocID or (dict.get("parent", False) == None)):
-        fileName =  textFromID(ID)
-    elif dict["parent"] in allDocID:
+    if(ID in allDocID):
         filePath = getFilePath(ID)
         filePath.reverse()
-        fileName = "/".join(filePath)
+        fileName = "/".join(filePath) + "/" + textFromID(ID)
     else:
         fileName = parentFromID(dict["parent"])
 

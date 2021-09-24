@@ -1,6 +1,6 @@
 # Roam .md to .org convertor 
 
-This is a forked repository from [fabioberger/roam-migration](https://github.com/fabioberger/roam-migration) with few more **additional features**:
+This folder is a forked repository from [fabioberger/roam-migration](https://github.com/fabioberger/roam-migration) with few more **additional features**:
 
 * Convert Markdown hyperlinks to match the syntax in org-mode i.e., `[Desc](URL)` to `[[URL][Desc]]`
 * Check out the [following video](https://www.youtube.com/watch?v=BJPw8FcvHzc) on how to use this in Winows10
