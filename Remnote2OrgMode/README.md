@@ -11,8 +11,12 @@ ___
     * need to understand if ref is from same folder or different folder - incorrect logic in `Test File 2.1.org`
     * this is partially DONE - references in same parent folder are still added with full path
 * [x] Block Ref's for a bullet which has a link need to be formatted properly
+    * > Org-Roam doesn't need links to be expanded with reference
     * E.g: [[../folder/file::*text\\[\\[url_within_ref\\]\\[url desc\\]\\]][actual block ref Desc.]]
     * [[file:Test Folder (Level 1)/Test File 1.1.org::*Sample Rem with Tag \\[\\[file:SampleTag1.org\\]\\[SampleTag1\\]\\]][Sample Rem with Tag SampleTag1]]
+* [ ] Block Ref's for a bullet which has a link need to be formatted as plain text
+    * E.g: Sample Rem with Tag `Sample Rem with Tag [[id:KdhgZRqGZThRY2a3a][SampleTag1]` with `ID: FCceZrymThCCYGP72` can be referenced as `[[id:FCceZrymThCCYGP72][Sample Rem with Tag SampleTag1]]`
+    * > Note: This probably doesn't work without org-roam
 * [ ] convert block-ref's to org-transclutions:
     * Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
 * [ ] Org-Roam: Create properties for bullets that are references (`org-id-get-create`)

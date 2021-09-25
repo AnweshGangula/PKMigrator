@@ -118,12 +118,13 @@ def createFile(remID, remFolderPath, pathLevel=0):
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
                 child = expandChildren(remID, pathLevel = pathLevel)
+                fileMetadata = f':PROPERTIES:\n:ID:       {remID}\n:END:\n#+title: '
                 # if child == []:
                 #     # if there are not children, do not generate file (could cause issues with REM that are referenced without any actual content)
                 #     raise ValueError(filename + '.org File doesnt have any content')
                 expandBullets = "\n".join(child)
 
-                f.write("#+TITLE:" + fileTitle + "\n" + expandBullets)
+                f.write(fileMetadata + fileTitle + "\n\n" + expandBullets)
             # print(f'{remText}.org created')
             created.append("ID: " + remID + ",  Name: " + filename)
         except Exception as e:
@@ -149,30 +150,32 @@ def ignoreRem(ID):
 
 
 def expandChildren(ID, level=0, pathLevel = 0):
-    childID = [x["children"] for x in RemnoteDocs if x["_id"] == ID][0]
+    childIDList = [x["children"] for x in RemnoteDocs if x["_id"] == ID][0]
     filteredChildren = []
     text = ""
-    childData = [x for x in RemnoteDocs if x["_id"] in childID]
+    childData = [x for x in RemnoteDocs if x["_id"] in childIDList]
     for x in childData:
-        if not ignoreRem(x["_id"]):
-            text = textFromID(x["_id"], pathLevel = pathLevel)
+        ChildID = x["_id"]
+        if not ignoreRem(ChildID):
+            text = textFromID(ChildID, pathLevel = pathLevel)
             prefix = ""
             if level >= 1:
                 prefix = "*" * level
             prefix += "* "
+            blankPrefix = prefix.replace("*", " ")
             if text.startswith("#+BEGIN_SRC"):
-                prefix = prefix.replace("*", " ")
+                prefix = blankPrefix
             text = prefix + text
-            # if "references" in x and x["references"] != []:
-            #     # this is not necessary in org-mode
-            #     text += f' ^{x["_id"].replace("_", "-")}'
+            if "references" in x and x["references"] != []:
+                orgRoamData = ['', ':PROPERTIES:', f':ID:       {ChildID}', ':END:', '']
+                text += f'\n'.join(orgRoamData)
             if "\n" in text:
                 text = text.replace("\r", "\n")
                 text = re.sub(re_newLine, r"\n\n", text)
                 text = text.replace("\n", "\n" + prefix.replace("*", " "))
             filteredChildren.append(text)
 
-            filteredChildren.extend(expandChildren(x["_id"], level = level + 1 ))
+            filteredChildren.extend(expandChildren(ChildID, level = level + 1 ))
 
     return filteredChildren
 
@@ -205,14 +208,14 @@ def textFromID(ID, level = 0, pathLevel = 0):
             newDict = dictFromID(item["_id"])
             newID = newDict["_id"]
             # TODO parentPath needs to be corrected - for paths in same parent folder, this still adds all folders
-            parentPath = parentFromID(newID)
+            parentPath = newID # parentFromID(newID)
             IDtext = textFromID(newID).replace("[","\[").replace("]","\]")
-            refPrefix = "file:" + ("../"*pathLevel)
+            refPrefix = "id:" # + ("../"*pathLevel)
             if newID in allDocID:
-                text += f'[[{refPrefix}{parentPath}.org][{IDtext}]]'
+                text += f'[[{refPrefix}{parentPath}][{IDtext}]]'
             else:
                 # TODO Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
-                text += f'[[{refPrefix}{parentPath}.org::*{IDtext}][{IDtext}]]'
+                text += f'[[{refPrefix}{parentPath}][{IDtext}]]'
         elif(item["i"] == "o"):
             text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "Org mode").title())}\n{item["text"]}\n#+END_SRC' ## using "org" as a fallback language
         elif(item["i"] == "i" and "url" in item):
@@ -254,11 +257,11 @@ def textFromID(ID, level = 0, pathLevel = 0):
 
 def convertTags(dict):
     text = ""
-    for x in dict["typeParents"]:
-        if not ignoreRem(x):
-            textExtract = textFromID(x, level = 1).strip()
+    for id in dict["typeParents"]:
+        if not ignoreRem(id):
+            textExtract = textFromID(id, level = 1).strip()
             textExtract = re.sub(r'[^A-Za-z0-9-]+', '_', textExtract)
-            text += f' [[file:{textExtract}.org][{textExtract}]]'
+            text += f' [[id:{id}][{textExtract}]]'
         
     return text
 
