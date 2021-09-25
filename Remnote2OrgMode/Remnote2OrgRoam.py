@@ -210,9 +210,9 @@ def textFromID(ID, level = 0, pathLevel = 0):
             # TODO parentPath needs to be corrected - for paths in same parent folder, this still adds all folders
             parentPath = newID # parentFromID(newID)
             IDtext = textFromID(newID).replace("[","\[").replace("]","\]")
-            IDtext = re.sub(r'\\\[.*\[|\\]\\]','', IDtext) # this currently depends on the replace method above
+            IDtext = re.sub(r'\s*\\\[.*\\]\\]','', IDtext) # this currently depends on the replace method above
                 # \\\[.*\[|\\]\\] - keeps the tag text in the reference
-                # \\\[.*\\]\\] - remomve the entire tag from reference
+                # \s*\\\[.*\\]\\] - remomve the entire tag from reference
             refPrefix = "id:" # + ("../"*pathLevel)
             if newID in allDocID:
                 text += f'[[{refPrefix}{parentPath}][{IDtext}]]'
