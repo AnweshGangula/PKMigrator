@@ -231,8 +231,10 @@ def textFromID(ID, level = 0):
                 text += textHighlight(currText, item["h"], html = highlightToHTML)
             elif(item.get("u", False)):
                 text += currText
+        elif(item["i"] == "q" and "textOfDeletedRem" in item):
+            text += "#DeletedRem: " + "".join(item["textOfDeletedRem"])
         else:
-            print("ERROR at textFromID function for ID: " + ID)
+            print("Could not Extract text at textFromID function for ID: " + ID)
 
     if level == 0:
         # level is used to disable recursive expansion, since tags don't need to be recursive
@@ -307,12 +309,10 @@ def fence_HTMLtags(string):
 def parentFromID(ID):
     fileName = ""
     dict = dictFromID(ID)
-    if(ID in allDocID or (dict.get("parent", False) == None)):
-        fileName =  textFromID(ID)
-    elif dict["parent"] in allDocID:
+    if(ID in allDocID):
         filePath = getFilePath(ID)
         filePath.reverse()
-        fileName = "/".join(filePath)
+        fileName = "/".join(filePath) + "/" + textFromID(ID)
     else:
         fileName = parentFromID(dict["parent"])
 
