@@ -33,12 +33,17 @@ os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
 RemnoteDocs = remnoteJSON["docs"]
+ignoreKey = ["Remnote Default"]
+ignoreID = ["9onq37x6PbsFxvRqu", "6sz2MJeFLZoTRQofZ"]
 
 allParentRem = []
 # allFolders = []
 # topFolders = []
 for x in RemnoteDocs:
-    if(x.get("n", False) == 1):
+    if(x.get("n", False) == 1 and
+     x.get("_id", False) not in ignoreID and
+     x["key"] != [] and
+     x["key"][0] not in ignoreKey):
         allParentRem.append(x)
         if(x.get("rcrt", False) == "d"):
             # Convert Daily Documents to folder
@@ -70,6 +75,7 @@ def getAllDocs(RemList):
     return IDlist
 
 allDocID = getAllDocs(allParentRem)
+allDocID = list(set(allDocID) - set(ignoreID))
 # allDocID is used in textFromID function
 
 created = []
@@ -97,9 +103,9 @@ def createFile(remID, remFolderPath):
     remText = textFromID(remID)
     remDict = dictFromID(remID)
     if remDict.get("forceIsFolder", False):
-            newFilePath = os.path.join(remFolderPath, remText)
-            for child in remDict["children"]:
-                createFile(child, newFilePath)
+        newFilePath = os.path.join(remFolderPath, remText)
+        for child in remDict["children"]:
+            createFile(child, newFilePath)
     else:
         os.makedirs(remFolderPath, exist_ok=True)
         filename = remText
@@ -132,7 +138,6 @@ def createFile(remID, remFolderPath):
 
 def ignoreRem(ID):
     # TODO: add more ignore ID's
-    ignoreID = ["9onq37x6PbsFxvRqu", "6sz2MJeFLZoTRQofZ"]
     dict = dictFromID(ID)
     if(dict == []
     or dict["key"] == [] 
@@ -157,14 +162,14 @@ def expandChildren(ID, level=0):
             prefix = ""
             if level >= 1:
                 prefix = "    " * level
-            prefix += "* "
+            prefix += "- "
             text = prefix +  textFromID(x["_id"])
             if "references" in x and x["references"] != []:
                 text += f' ^{x["_id"].replace("_", "-")}'
             if "\n" in text:
                 text = text.replace("\r", "\n")
                 text = re.sub(re_newLine, r"\n\n", text)
-                text = text.replace("\n", "\n" + prefix.replace("*", " "))
+                text = text.replace("\n", "\n" + prefix.replace("-", " "))
             filteredChildren.append(text)
 
             filteredChildren.extend(expandChildren(x["_id"], level + 1 ))
@@ -211,7 +216,7 @@ def textFromID(ID, level = 0):
             currText = item["text"]
             currText = fence_HTMLtags(currText)
             if ("url" in item):
-                text += f'[{currText}]({item["url"]})'
+                text += f'[{currText.strip()}]({item["url"]})'
             elif (currText.strip() == ""):
                 text += currText
             elif(item.get("q", False)):
@@ -226,8 +231,10 @@ def textFromID(ID, level = 0):
                 text += textHighlight(currText, item["h"], html = highlightToHTML)
             elif(item.get("u", False)):
                 text += currText
+        elif(item["i"] == "q" and "textOfDeletedRem" in item):
+            text += "#DeletedRem: " + "".join(item["textOfDeletedRem"])
         else:
-            print("ERROR at textFromID function for ID: " + ID)
+            print("Could not Extract text at textFromID function for ID: " + ID)
 
     if level == 0:
         # level is used to disable recursive expansion, since tags don't need to be recursive
@@ -302,12 +309,10 @@ def fence_HTMLtags(string):
 def parentFromID(ID):
     fileName = ""
     dict = dictFromID(ID)
-    if(ID in allDocID or (dict.get("parent", False) == None)):
-        fileName =  textFromID(ID)
-    elif dict["parent"] in allDocID:
+    if(ID in allDocID):
         filePath = getFilePath(ID)
         filePath.reverse()
-        fileName = "/".join(filePath)
+        fileName = "/".join(filePath) + "/" + textFromID(ID)
     else:
         fileName = parentFromID(dict["parent"])
 
