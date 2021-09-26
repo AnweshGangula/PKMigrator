@@ -115,9 +115,9 @@ def createFile(remID, remFolderPath, pathLevel=0):
             # fileTitle += " (" + filename + ")"
         filePath = os.path.join(remFolderPath, filename + ".org")
 
+        child = expandChildren(remID, pathLevel = pathLevel)
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
-                child = expandChildren(remID, pathLevel = pathLevel)
                 fileMetadata = f':PROPERTIES:\n:ID:       {remID}\n:END:\n#+title: '
                 # if child == []:
                 #     # if there are not children, do not generate file (could cause issues with REM that are referenced without any actual content)
@@ -211,8 +211,9 @@ def textFromID(ID, level = 0, pathLevel = 0):
             parentPath = newID # parentFromID(newID)
             IDtext = textFromID(newID).replace("[","\[").replace("]","\]")
             IDtext = re.sub(r'\s*\\\[.*\[|\\]\\]', ' ', IDtext) # this currently depends on the replace method above
+            # Reference: https://regex101.com/r/z9B8Pw/1
                 # \s*\\\[.*\[|\\]\\] - keeps the tag text in the reference
-                # \s*\\\[.*\\]\\] - remomve the entire tag from reference
+                # \s*\\\[.*\\]\\] - remove the entire tag from reference
             refPrefix = "id:" # + ("../"*pathLevel)
             if newID in allDocID:
                 text += f'[[{refPrefix}{parentPath}][{IDtext}]]'
@@ -220,7 +221,7 @@ def textFromID(ID, level = 0, pathLevel = 0):
                 # TODO Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
                 text += f'[[{refPrefix}{parentPath}][{IDtext}]]'
         elif(item["i"] == "o"):
-            text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "Org mode").title())}\n{item["text"]}\n#+END_SRC' ## using "org" as a fallback language
+            text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "None").title())}\n{item["text"]}\n#+END_SRC'
         elif(item["i"] == "i" and "url" in item):
             text += f'[[{item["url"]}]]'
         elif(item["i"] == "m"):
@@ -242,8 +243,10 @@ def textFromID(ID, level = 0, pathLevel = 0):
                 text += textHighlight(currText, item["h"], html = highlightToHTML)
             elif(item.get("u", False)):
                 text += currText
+        elif(item["i"] == "q" and "textOfDeletedRem" in item):
+            text += "#DeletedRem: " + "".join(item["textOfDeletedRem"])
         else:
-            print("ERROR at textFromID function for ID: " + ID)
+            print("Could not Extract text at textFromID function for ID: " + ID)
 
     if level == 0:
         # level is used to disable recursive expansion, since tags don't need to be recursive
@@ -338,9 +341,15 @@ def getFilePath(ID):
     return pathList
 
 def getOrgLanguage(lang):
+    lang = lang.lower()
     langJsonPath = os.path.join(dir_path, "orgLanguages.json")
     langList = json.load(open(langJsonPath, mode="rt", encoding="utf-8", errors="ignore"))
-    identifier = langList[lang]
+    try:
+        identifier = langList[lang]
+    except Exception as e:
+        identifier = langList[lang]
+        print(e)
+        print("cannot find org-language(syntax-highlight) for: " + lang)
 
     return identifier
 
