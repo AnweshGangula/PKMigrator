@@ -33,12 +33,17 @@ os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
 RemnoteDocs = remnoteJSON["docs"]
+ignoreKey = ["Remnote Default"]
+ignoreID = ["9onq37x6PbsFxvRqu", "6sz2MJeFLZoTRQofZ"]
 
 allParentRem = []
 # allFolders = []
 # topFolders = []
 for x in RemnoteDocs:
-    if(x.get("n", False) == 1):
+    if(x.get("n", False) == 1 and
+     x.get("_id", False) not in ignoreID and
+     x["key"] != [] and
+     x["key"][0] not in ignoreKey):
         allParentRem.append(x)
         if(x.get("rcrt", False) == "d"):
             # Convert Daily Documents to folder
@@ -214,7 +219,7 @@ def textFromID(ID, level = 0, pathLevel = 0):
                 # TODO Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
                 text += f'[[{refPrefix}{parentPath}.org::*{IDtext}][{IDtext}]]'
         elif(item["i"] == "o"):
-            text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "Org mode").title())}\n{item["text"]}\n#+END_SRC' ## using "org" as a fallback language
+            text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "None").title())}\n{item["text"]}\n#+END_SRC'
         elif(item["i"] == "i" and "url" in item):
             text += f'[[{item["url"]}]]'
         elif(item["i"] == "m"):
@@ -236,8 +241,10 @@ def textFromID(ID, level = 0, pathLevel = 0):
                 text += textHighlight(currText, item["h"], html = highlightToHTML)
             elif(item.get("u", False)):
                 text += currText
+        elif(item["i"] == "q" and "textOfDeletedRem" in item):
+            text += "#DeletedRem: " + "".join(item["textOfDeletedRem"])
         else:
-            print("ERROR at textFromID function for ID: " + ID)
+            print("Could not Extract text at textFromID function for ID: " + ID)
 
     if level == 0:
         # level is used to disable recursive expansion, since tags don't need to be recursive
