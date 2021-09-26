@@ -33,12 +33,17 @@ os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
 RemnoteDocs = remnoteJSON["docs"]
+ignoreKey = ["Remnote Default"]
+ignoreID = ["9onq37x6PbsFxvRqu", "6sz2MJeFLZoTRQofZ"]
 
 allParentRem = []
 # allFolders = []
 # topFolders = []
 for x in RemnoteDocs:
-    if(x.get("n", False) == 1):
+    if(x.get("n", False) == 1 and
+     x.get("_id", False) not in ignoreID and
+     x["key"] != [] and
+     x["key"][0] not in ignoreKey):
         allParentRem.append(x)
         if(x.get("rcrt", False) == "d"):
             # Convert Daily Documents to folder

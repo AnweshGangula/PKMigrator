@@ -21,6 +21,8 @@ ___
     * Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
 * [ ] Org-Roam: Create properties for bullets that are references (`org-id-get-create`)
 * [ ] Create a function to add metadata to files or nodes
+* [ ] Update [./orgLanguages.json](orgLanguages.json) as per OrgMode languages
+    * E.g: json is not a supported language in orgmode - so JSON syntax highlighting is probably Javascript(js)
 
 ## How to use
 
