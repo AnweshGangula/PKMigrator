@@ -15,10 +15,11 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 # user-input variables: ----------------------------------------
 jsonFile = "rem.json"
 # jsonPath = sys.argv[1]
-OrgRootFolder = "Rem2Org"
+OrgRootFolder = "Rem2Org-Actual"
 dailyDocsFolder = "Daily Documents"
 highlightToHTML = False # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 previewBlockRef = True
+delimiterSR = " -- " # Spaced Repetition Delimiter
 
 re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
 re_newLine = re.compile("(\\n){3,}") # replace more than 2 newlines with only 2: https://regex101.com/r/9VAqaO/1/
@@ -28,6 +29,8 @@ if previewBlockRef:
     pbr = "!"
 
 jsonPath = os.path.join(dir_path, jsonFile)
+if not os.path.isfile(jsonPath):
+    sys.exit("JSON file not found")
 Rem2ObsPath = os.path.join(os.path.dirname(jsonPath), OrgRootFolder)
 os.makedirs(Rem2ObsPath, exist_ok=True)
 
@@ -107,7 +110,8 @@ def createFile(remID, remFolderPath, pathLevel=0):
                 createFile(child, newFilePath, pathLevel + 1)
     else:
         os.makedirs(remFolderPath, exist_ok=True)
-        filename = remText
+        filename = re.sub(r'\[.*\[|\]\]', '', remText).strip()
+        filename = filename.split(delimiterSR)[0]
         fileTitle = filename
         # filename = re.sub('[^\w\-_\. ]', '_', filename)
         if(os.path.basename(remFolderPath) == dailyDocsFolder):
@@ -198,6 +202,7 @@ def dictFromID(ID):
 def textFromID(ID, level = 0, pathLevel = 0):
     dict = dictFromID(ID)
     key = dict["key"]
+    value = dict.get("value", [])
     text = ""
 
     todoStatus = getTODO(dict)
@@ -206,7 +211,27 @@ def textFromID(ID, level = 0, pathLevel = 0):
     elif todoStatus == "Unfinished":
         text += "TODO "
 
-    for item in key:
+    text += arrayToText(key, ID, pathLevel = pathLevel)
+    
+    if value and len(value) > 0:
+        text += delimiterSR + arrayToText(value, ID, pathLevel = pathLevel)
+
+
+    if level == 0:
+        # level is used to disable recursive expansion, since tags don't need to be recursive
+        if ((len(dict.get("typeParents", []))>0) 
+        and not ID in allDocID 
+        and not(dict.get("forceIsFolder", False))):
+            text += convertTags(dict)
+    
+    if text.startswith("#+BEGIN_SRC"):
+        text = text.replace("\r\n", "\n")
+    
+    return text
+
+def arrayToText(array, ID, pathLevel = 0):
+    text = ""
+    for item in array:
         if(isinstance(item, str)):
             text += fence_HTMLtags(item)
         elif(item["i"] == "q" and "_id" in item):
@@ -252,19 +277,8 @@ def textFromID(ID, level = 0, pathLevel = 0):
             text += "#DeletedRem: " + "".join(item["textOfDeletedRem"])
         else:
             print("Could not Extract text at textFromID function for ID: " + ID)
-
-    if level == 0:
-        # level is used to disable recursive expansion, since tags don't need to be recursive
-        if ((len(dict.get("typeParents", []))>0) 
-        and not ID in allDocID 
-        and not(dict.get("forceIsFolder", False))):
-            text += convertTags(dict)
-    
-    if text.startswith("#+BEGIN_SRC"):
-        text = text.replace("\r\n", "\n")
     
     return text
-
 
 def convertTags(dict):
     text = ""
