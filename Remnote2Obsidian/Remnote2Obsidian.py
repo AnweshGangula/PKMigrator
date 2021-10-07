@@ -19,6 +19,7 @@ vaultName = "Rem2Obs"
 dailyDocsFolder = "Daily Documents"
 highlightToHTML = True # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 previewBlockRef = True
+delimiterSR = " -- " # Spaced Repetition Delimiter
 
 re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
 re_newLine = re.compile("(\\n){3,}") # replace more than 2 newlines with only 2: https://regex101.com/r/9VAqaO/1/
@@ -28,6 +29,8 @@ if previewBlockRef:
     pbr = "!"
 
 jsonPath = os.path.join(dir_path, jsonFile)
+if not os.path.isfile(jsonPath):
+    sys.exit("JSON file not found")
 Rem2ObsPath = os.path.join(dir_path, vaultName)
 os.makedirs(Rem2ObsPath, exist_ok=True)
 
@@ -109,6 +112,7 @@ def createFile(remID, remFolderPath):
     else:
         os.makedirs(remFolderPath, exist_ok=True)
         filename = remText
+        filename = filename.split(delimiterSR)[0]
         fileTitle = filename
         # filename = re.sub('[^\w\-_\. ]', '_', filename)
         if(os.path.basename(remFolderPath) == dailyDocsFolder):
@@ -124,9 +128,10 @@ def createFile(remID, remFolderPath):
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
                 child = expandChildren(remID)
+                fileMetadata = f'# '
                 expandBullets = "\n".join(child)
 
-                f.write("# " + fileTitle + "\n" + expandBullets)
+                f.write(fileMetadata + fileTitle + "\n\n" + expandBullets)
             # print(f'{remText}.md created')
             created.append("ID: " + remID + ",  Name: " + filename)
         except Exception as e:
@@ -158,21 +163,26 @@ def expandChildren(ID, level=0):
 
     childData = [x for x in RemnoteDocs if x["_id"] in childID]
     for x in childData:
-        if not ignoreRem(x["_id"]):
+        ChildID = x["_id"]
+        if not ignoreRem(ChildID):
+            text = textFromID(ChildID)
             prefix = ""
             if level >= 1:
                 prefix = "    " * level
             prefix += "- "
-            text = prefix +  textFromID(x["_id"])
+            blankPrefix = prefix.replace("-", " ")
+            if text.startswith("```"):
+                prefix = blankPrefix
+            text = prefix + text
             if "references" in x and x["references"] != []:
-                text += f' ^{x["_id"].replace("_", "-")}'
+                text += f' ^{ChildID.replace("_", "-")}'
             if "\n" in text:
                 text = text.replace("\r", "\n")
                 text = re.sub(re_newLine, r"\n\n", text)
-                text = text.replace("\n", "\n" + prefix.replace("-", " "))
+                text = text.replace("\n", "\n" + blankPrefix)
             filteredChildren.append(text)
 
-            filteredChildren.extend(expandChildren(x["_id"], level + 1 ))
+            filteredChildren.extend(expandChildren(ChildID, level = level + 1 ))
 
     return filteredChildren
 
@@ -190,6 +200,7 @@ def dictFromID(ID):
 def textFromID(ID, level = 0):
     dict = dictFromID(ID)
     key = dict["key"]
+    value = dict.get("value", [])
     text = ""
 
     todoStatus = getTODO(dict)
@@ -198,16 +209,37 @@ def textFromID(ID, level = 0):
     elif todoStatus == "Unfinished":
         text += "[ ] "
 
-    for item in key:
+    text += arrayToText(key, ID)
+
+    if value and len(value) > 0:
+        text += delimiterSR + arrayToText(value, ID)
+    if level == 0:
+        # level is used to disable recursive expansion, since tags don't need to be recursive
+        if ((len(dict.get("typeParents", []))>0) 
+        and not ID in allDocID 
+        and not(dict.get("forceIsFolder", False))):
+            text += convertTags(dict)
+    
+    if text.startswith("```"):
+        text = text.replace("\r\n", "\n")
+    
+    return text
+
+def arrayToText(array, ID):
+    text = ""
+    for item in array:
         if(isinstance(item, str)):
             text += fence_HTMLtags(item)
         elif(item["i"] == "q" and "_id" in item):
             newDict = dictFromID(item["_id"])
+            if newDict == []:
+                continue
             newID = newDict["_id"]
+            parentPath = parentFromID(newID)
             if newID in allDocID:
-                text += f'[[{parentFromID(newID)}]]'
+                text += f'[[{parentPath}]]'
             else:
-                text += f'{pbr}[[{parentFromID(newID)}#^{newID}]]'
+                text += f'{pbr}[[{parentPath}#^{newID}]]'
         elif(item["i"] == "o"):
             text += f'```{item.get("language", "")}\n{item["text"]}\n  ```'
         elif(item["i"] == "i" and "url" in item):
@@ -236,20 +268,9 @@ def textFromID(ID, level = 0):
         else:
             print("Could not Extract text at textFromID function for ID: " + ID)
 
-    if level == 0:
-        # level is used to disable recursive expansion, since tags don't need to be recursive
-        if ((len(dict.get("typeParents", []))>0) 
-        and not ID in allDocID 
-        and not(dict.get("forceIsFolder", False))):
-            text += addTags(dict)
-    
-    if text.startswith("```"):
-        text = text.replace("\r\n", "\n")
-    
     return text
 
-
-def addTags(dict):
+def convertTags(dict):
     text = ""
     for x in dict["typeParents"]:
         if not ignoreRem(x):

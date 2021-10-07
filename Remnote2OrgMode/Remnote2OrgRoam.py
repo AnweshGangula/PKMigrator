@@ -14,8 +14,11 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # user-input variables: ----------------------------------------
 jsonFile = "../Data/rem.json"
+jsonPath = os.path.join(dir_path, jsonFile)
 # jsonPath = sys.argv[1]
-OrgRootFolder = "Rem2Org-Actual"
+RemLanguages = "../Data/RemLanguages.json"
+langJsonPath = os.path.join(dir_path, RemLanguages)
+OrgRootFolder = "Rem2Org"
 dailyDocsFolder = "Daily Documents"
 highlightToHTML = False # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 previewBlockRef = True
@@ -124,9 +127,9 @@ def createFile(remID, remFolderPath, pathLevel=0):
             # fileTitle += " (" + filename + ")"
         filePath = os.path.join(remFolderPath, filename + ".org")
 
-        child = expandChildren(remID, pathLevel = pathLevel)
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
+                child = expandChildren(remID, pathLevel = pathLevel)
                 fileMetadata = f':PROPERTIES:\n:ID:       {remID}\n:END:\n#+title: '
                 # if child == []:
                 #     # if there are not children, do not generate file (could cause issues with REM that are referenced without any actual content)
@@ -181,7 +184,7 @@ def expandChildren(ID, level=0, pathLevel = 0):
             if "\n" in text:
                 text = text.replace("\r", "\n")
                 text = re.sub(re_newLine, r"\n\n", text)
-                text = text.replace("\n", "\n" + prefix.replace("*", " "))
+                text = text.replace("\n", "\n" + blankPrefix)
             filteredChildren.append(text)
 
             filteredChildren.extend(expandChildren(ChildID, level = level + 1 ))
@@ -215,7 +218,6 @@ def textFromID(ID, level = 0, pathLevel = 0):
     
     if value and len(value) > 0:
         text += delimiterSR + arrayToText(value, ID, pathLevel = pathLevel)
-
 
     if level == 0:
         # level is used to disable recursive expansion, since tags don't need to be recursive
@@ -363,7 +365,6 @@ def getFilePath(ID):
 
 def getOrgLanguage(lang):
     lang = lang.lower()
-    langJsonPath = os.path.join(dir_path, "orgLanguages.json")
     langList = json.load(open(langJsonPath, mode="rt", encoding="utf-8", errors="ignore"))
     try:
         identifier = langList[lang]
