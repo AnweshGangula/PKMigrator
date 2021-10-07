@@ -13,7 +13,7 @@ start_time = datetime.datetime.now()
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # user-input variables: ----------------------------------------
-jsonFile = "rem.json"
+jsonFile = "../Data/rem.json"
 # jsonPath = sys.argv[1]
 vaultName = "Rem2Obs"
 dailyDocsFolder = "Daily Documents"
@@ -28,7 +28,7 @@ if previewBlockRef:
     pbr = "!"
 
 jsonPath = os.path.join(dir_path, jsonFile)
-Rem2ObsPath = os.path.join(os.path.dirname(jsonPath), vaultName)
+Rem2ObsPath = os.path.join(dir_path, vaultName)
 os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))

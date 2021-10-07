@@ -7,6 +7,9 @@ ___
 > * [ ] include portals in bullets
 > * [ ] Preserve the order of REM's as per Remnote Web app
 > * [ ] Remove unnecessary files outside my personal Remnote
+> * [ ] [Creating Spaced Repition Cards](https://www.remnote.com/p/help/document/gdk2ymWq8oHrkXCXb):
+    > * if `"value"` is not `null` it means it's a spaced repition card
+    > * `"type": 2` - **Concept Card**
 
 ## DONE
 > * [x] Block Ref in folders need to include folder name (eg: `[[Folder/file#^blockID]]`)

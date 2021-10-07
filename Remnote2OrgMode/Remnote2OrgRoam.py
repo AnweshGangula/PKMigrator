@@ -13,7 +13,7 @@ start_time = datetime.datetime.now()
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # user-input variables: ----------------------------------------
-jsonFile = "rem.json"
+jsonFile = "../Data/rem.json"
 # jsonPath = sys.argv[1]
 OrgRootFolder = "Rem2Org-Actual"
 dailyDocsFolder = "Daily Documents"
@@ -31,7 +31,7 @@ if previewBlockRef:
 jsonPath = os.path.join(dir_path, jsonFile)
 if not os.path.isfile(jsonPath):
     sys.exit("JSON file not found")
-Rem2ObsPath = os.path.join(os.path.dirname(jsonPath), OrgRootFolder)
+Rem2ObsPath = os.path.join(dir_path, OrgRootFolder)
 os.makedirs(Rem2ObsPath, exist_ok=True)
 
 remnoteJSON = json.load(open(jsonPath, mode="rt", encoding="utf-8", errors="ignore"))
@@ -236,6 +236,8 @@ def arrayToText(array, ID, pathLevel = 0):
             text += fence_HTMLtags(item)
         elif(item["i"] == "q" and "_id" in item):
             newDict = dictFromID(item["_id"])
+            if newDict == []:
+                continue
             newID = newDict["_id"]
             # TODO parentPath needs to be corrected - for paths in same parent folder, this still adds all folders
             parentPath = newID # parentFromID(newID)
