@@ -251,7 +251,7 @@ def arrayToText(array, ID, pathLevel = 0):
                 # TODO Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
                 text += f'[[{refPrefix}{parentPath}.org::*{IDtext}][{IDtext}]]'
         elif(item["i"] == "o"):
-            text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "None").title())}\n{item["text"]}\n#+END_SRC'
+            text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "None"))}\n{item["text"]}\n#+END_SRC'
         elif(item["i"] == "i" and "url" in item):
             text += f'[[{item["url"]}]]'
         elif(item["i"] == "m"):

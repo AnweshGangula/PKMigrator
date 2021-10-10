@@ -15,6 +15,8 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 # user-input variables: ----------------------------------------
 jsonFile = "../Data/rem.json"
 # jsonPath = sys.argv[1]
+RemLanguages = "../Data/RemLanguages.json"
+langJsonPath = os.path.join(dir_path, RemLanguages)
 vaultName = "Rem2Obs"
 dailyDocsFolder = "Daily Documents"
 highlightToHTML = True # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
@@ -241,7 +243,7 @@ def arrayToText(array, ID):
             else:
                 text += f'{pbr}[[{parentPath}#^{newID}]]'
         elif(item["i"] == "o"):
-            text += f'```{item.get("language", "")}\n{item["text"]}\n  ```'
+            text += f'```{getOrgLanguage(item.get("language", "None"))}\n{item["text"]}\n  ```'
         elif(item["i"] == "i" and "url" in item):
             text += f'![]({item["url"]})'
         elif(item["i"] == "m"):
@@ -348,6 +350,18 @@ def getFilePath(ID):
         pathList.extend(getFilePath(dict["parent"]))
 
     return pathList
+
+def getOrgLanguage(lang):
+    lang = lang.lower()
+    langList = json.load(open(langJsonPath, mode="rt", encoding="utf-8", errors="ignore"))
+    try:
+        identifier = langList[lang]
+    except Exception as e:
+        identifier = langList[lang]
+        print(e)
+        print("cannot find org-language(syntax-highlight) for: " + lang)
+
+    return identifier
 
 if __name__ == '__main__':
     main()
