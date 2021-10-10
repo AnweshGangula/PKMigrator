@@ -14,8 +14,11 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # user-input variables: ----------------------------------------
 jsonFile = "../Data/rem.json"
+jsonPath = os.path.join(dir_path, jsonFile)
 # jsonPath = sys.argv[1]
-OrgRootFolder = "Rem2Org-Actual"
+RemLanguages = "../Data/RemLanguages.json"
+langJsonPath = os.path.join(dir_path, RemLanguages)
+OrgRootFolder = "Rem2Org"
 dailyDocsFolder = "Daily Documents"
 highlightToHTML = False # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 previewBlockRef = True
@@ -23,6 +26,7 @@ delimiterSR = " -- " # Spaced Repetition Delimiter
 
 re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
 re_newLine = re.compile("(\\n){3,}") # replace more than 2 newlines with only 2: https://regex101.com/r/9VAqaO/1/
+re_remID = re.compile(r'((\]\])?\s*\[.*?(\]\[))') # reference: https://regex101.com/r/z9B8Pw/2
 # ---------------------------------------------------------------
 pbr=""
 if previewBlockRef:
@@ -104,14 +108,20 @@ def createFile(remID, remFolderPath, pathLevel=0):
         return
     remText = textFromID(remID)
     remDict = dictFromID(remID)
+
+    textSplit = remText.split(delimiterSR)
+    filename = textSplit[0]
+    filename = replaceRemID(filename)
+    fileDesc = ""
+    if len(textSplit)>1:
+        fileDesc = "\nFile Description: " + textSplit[1]
+    
     if remDict.get("forceIsFolder", False):
-            newFilePath = os.path.join(remFolderPath, remText)
-            for child in remDict["children"]:
-                createFile(child, newFilePath, pathLevel + 1)
+        newFilePath = os.path.join(remFolderPath, filename)
+        for child in remDict["children"]:
+            createFile(child, newFilePath, pathLevel + 1)
     else:
         os.makedirs(remFolderPath, exist_ok=True)
-        filename = re.sub(r'\[.*\[|\]\]', '', remText).strip()
-        filename = filename.split(delimiterSR)[0]
         fileTitle = filename
         # filename = re.sub('[^\w\-_\. ]', '_', filename)
         if(os.path.basename(remFolderPath) == dailyDocsFolder):
@@ -124,17 +134,17 @@ def createFile(remID, remFolderPath, pathLevel=0):
             # fileTitle += " (" + filename + ")"
         filePath = os.path.join(remFolderPath, filename + ".org")
 
-        child = expandChildren(remID, pathLevel = pathLevel)
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
+                child = expandChildren(remID, pathLevel = pathLevel)
                 fileMetadata = f':PROPERTIES:\n:ID:       {remID}\n:END:\n#+title: '
                 # if child == []:
                 #     # if there are not children, do not generate file (could cause issues with REM that are referenced without any actual content)
                 #     raise ValueError(filename + '.org File doesnt have any content')
                 expandBullets = "\n".join(child)
 
-                f.write(fileMetadata + fileTitle + "\n\n" + expandBullets)
-            # print(f'{remText}.org created')
+                f.write(fileMetadata + fileTitle + fileDesc + "\n\n" + expandBullets)
+            # print(f'{filename}.org created')
             created.append("ID: " + remID + ",  Name: " + filename)
         except Exception as e:
             # print(e)
@@ -181,7 +191,7 @@ def expandChildren(ID, level=0, pathLevel = 0):
             if "\n" in text:
                 text = text.replace("\r", "\n")
                 text = re.sub(re_newLine, r"\n\n", text)
-                text = text.replace("\n", "\n" + prefix.replace("*", " "))
+                text = text.replace("\n", "\n" + blankPrefix)
             filteredChildren.append(text)
 
             filteredChildren.extend(expandChildren(ChildID, level = level + 1 ))
@@ -216,7 +226,6 @@ def textFromID(ID, level = 0, pathLevel = 0):
     if value and len(value) > 0:
         text += delimiterSR + arrayToText(value, ID, pathLevel = pathLevel)
 
-
     if level == 0:
         # level is used to disable recursive expansion, since tags don't need to be recursive
         if ((len(dict.get("typeParents", []))>0) 
@@ -241,8 +250,8 @@ def arrayToText(array, ID, pathLevel = 0):
             newID = newDict["_id"]
             # TODO parentPath needs to be corrected - for paths in same parent folder, this still adds all folders
             parentPath = newID # parentFromID(newID)
-            IDtext = textFromID(newID).replace("[","\[").replace("]","\]")
-            IDtext = re.sub(r'\s*\\\[.*\[|\\]\\]', ' ', IDtext) # this currently depends on the replace method above
+            IDtext = textFromID(newID)
+            IDtext = replaceRemID(IDtext)
             # Reference: https://regex101.com/r/z9B8Pw/1
                 # \s*\\\[.*\[|\\]\\] - keeps the tag text in the reference
                 # \s*\\\[.*\\]\\] - remove the entire tag from reference
@@ -253,7 +262,7 @@ def arrayToText(array, ID, pathLevel = 0):
                 # TODO Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
                 text += f'[[{refPrefix}{parentPath}][{IDtext}]]'
         elif(item["i"] == "o"):
-            text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "None").title())}\n{item["text"]}\n#+END_SRC'
+            text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "None"))}\n{item["text"]}\n#+END_SRC'
         elif(item["i"] == "i" and "url" in item):
             text += f'[[{item["url"]}]]'
         elif(item["i"] == "m"):
@@ -281,6 +290,16 @@ def arrayToText(array, ID, pathLevel = 0):
             print("Could not Extract text at textFromID function for ID: " + ID)
     
     return text
+
+
+def replaceRemID(text):
+    text = re.sub(re_remID, ' #', text)
+    text = text.replace("]]", "")
+    text = text.replace("/", "") # replace "/" if added in parentFromID() function
+    text = text.strip()
+
+    return text
+
 
 def convertTags(dict):
     text = ""
@@ -363,7 +382,6 @@ def getFilePath(ID):
 
 def getOrgLanguage(lang):
     lang = lang.lower()
-    langJsonPath = os.path.join(dir_path, "orgLanguages.json")
     langList = json.load(open(langJsonPath, mode="rt", encoding="utf-8", errors="ignore"))
     try:
         identifier = langList[lang]

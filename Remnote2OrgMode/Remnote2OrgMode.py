@@ -14,20 +14,26 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # user-input variables: ----------------------------------------
 jsonFile = "../Data/rem.json"
+jsonPath = os.path.join(dir_path, jsonFile)
 # jsonPath = sys.argv[1]
+RemLanguages = "../Data/RemLanguages.json"
+langJsonPath = os.path.join(dir_path, RemLanguages)
 OrgRootFolder = "Rem2Org"
 dailyDocsFolder = "Daily Documents"
 highlightToHTML = False # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 previewBlockRef = True
+delimiterSR = " -- " # Spaced Repetition Delimiter
 
 re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
 re_newLine = re.compile("(\\n){3,}") # replace more than 2 newlines with only 2: https://regex101.com/r/9VAqaO/1/
+re_remID = re.compile(r'((\]\])?\s*\[.*?(\]\[))') # reference: https://regex101.com/r/z9B8Pw/2
 # ---------------------------------------------------------------
 pbr=""
 if previewBlockRef:
     pbr = "!"
 
-jsonPath = os.path.join(dir_path, jsonFile)
+if not os.path.isfile(jsonPath):
+    sys.exit("JSON file not found")
 Rem2ObsPath = os.path.join(dir_path, OrgRootFolder)
 os.makedirs(Rem2ObsPath, exist_ok=True)
 
@@ -101,13 +107,20 @@ def createFile(remID, remFolderPath, pathLevel=0):
         return
     remText = textFromID(remID)
     remDict = dictFromID(remID)
+
+    textSplit = remText.split(delimiterSR)
+    filename = textSplit[0]
+    filename = replaceRemID(filename)
+    fileDesc = ""
+    if len(textSplit)>1:
+        fileDesc = "\nFile Description: " + textSplit[1]
+    
     if remDict.get("forceIsFolder", False):
-            newFilePath = os.path.join(remFolderPath, remText)
-            for child in remDict["children"]:
-                createFile(child, newFilePath, pathLevel + 1)
+        newFilePath = os.path.join(remFolderPath, filename)
+        for child in remDict["children"]:
+            createFile(child, newFilePath, pathLevel + 1)
     else:
         os.makedirs(remFolderPath, exist_ok=True)
-        filename = remText
         fileTitle = filename
         # filename = re.sub('[^\w\-_\. ]', '_', filename)
         if(os.path.basename(remFolderPath) == dailyDocsFolder):
@@ -123,13 +136,14 @@ def createFile(remID, remFolderPath, pathLevel=0):
         try:
             with open(filePath, mode="wt", encoding="utf-8") as f:
                 child = expandChildren(remID, pathLevel = pathLevel)
+                fileMetadata = f'#+TITLE: '
                 # if child == []:
                 #     # if there are not children, do not generate file (could cause issues with REM that are referenced without any actual content)
                 #     raise ValueError(filename + '.org File doesnt have any content')
                 expandBullets = "\n".join(child)
 
-                f.write("#+TITLE:" + fileTitle + "\n" + expandBullets)
-            # print(f'{remText}.org created')
+                f.write(fileMetadata + fileTitle + fileDesc + "\n\n" + expandBullets)
+            # print(f'{filename}.org created')
             created.append("ID: " + remID + ",  Name: " + filename)
         except Exception as e:
             # print(e)
@@ -159,14 +173,16 @@ def expandChildren(ID, level=0, pathLevel = 0):
     text = ""
     childData = [x for x in RemnoteDocs if x["_id"] in childID]
     for x in childData:
-        if not ignoreRem(x["_id"]):
-            text = textFromID(x["_id"], pathLevel = pathLevel)
+        ChildID = x["_id"]
+        if not ignoreRem(ChildID):
+            text = textFromID(ChildID, pathLevel = pathLevel)
             prefix = ""
             if level >= 1:
                 prefix = "*" * level
             prefix += "* "
+            blankPrefix = prefix.replace("*", " ")
             if text.startswith("#+BEGIN_SRC"):
-                prefix = prefix.replace("*", " ")
+                prefix = blankPrefix
             text = prefix + text
             # if "references" in x and x["references"] != []:
             #     # this is not necessary in org-mode
@@ -174,10 +190,10 @@ def expandChildren(ID, level=0, pathLevel = 0):
             if "\n" in text:
                 text = text.replace("\r", "\n")
                 text = re.sub(re_newLine, r"\n\n", text)
-                text = text.replace("\n", "\n" + prefix.replace("*", " "))
+                text = text.replace("\n", "\n" + blankPrefix)
             filteredChildren.append(text)
 
-            filteredChildren.extend(expandChildren(x["_id"], level = level + 1 ))
+            filteredChildren.extend(expandChildren(ChildID, level = level + 1 ))
 
     return filteredChildren
 
@@ -195,6 +211,7 @@ def dictFromID(ID):
 def textFromID(ID, level = 0, pathLevel = 0):
     dict = dictFromID(ID)
     key = dict["key"]
+    value = dict.get("value", [])
     text = ""
 
     todoStatus = getTODO(dict)
@@ -203,15 +220,38 @@ def textFromID(ID, level = 0, pathLevel = 0):
     elif todoStatus == "Unfinished":
         text += "TODO "
 
-    for item in key:
+    text += arrayToText(key, ID, pathLevel = pathLevel)
+
+    if value and len(value) > 0:
+        text += delimiterSR + arrayToText(value, ID, pathLevel = pathLevel)
+
+    if level == 0:
+        # level is used to disable recursive expansion, since tags don't need to be recursive
+        if ((len(dict.get("typeParents", []))>0) 
+        and not ID in allDocID 
+        and not(dict.get("forceIsFolder", False))):
+            text += convertTags(dict)
+    
+    if text.startswith("#+BEGIN_SRC"):
+        text = text.replace("\r\n", "\n")
+    
+    return text
+
+def arrayToText(array, ID, pathLevel = 0):
+    text = ""
+    for item in array:
         if(isinstance(item, str)):
             text += fence_HTMLtags(item)
         elif(item["i"] == "q" and "_id" in item):
             newDict = dictFromID(item["_id"])
+            if newDict == []:
+                continue
             newID = newDict["_id"]
             # TODO parentPath needs to be corrected - for paths in same parent folder, this still adds all folders
             parentPath = parentFromID(newID)
-            IDtext = textFromID(newID).replace("[","\[").replace("]","\]")
+            IDtext = textFromID(newID)
+            IDtext = replaceRemID(IDtext)
+
             refPrefix = "file:" + ("../"*pathLevel)
             if newID in allDocID:
                 text += f'[[{refPrefix}{parentPath}.org][{IDtext}]]'
@@ -219,7 +259,7 @@ def textFromID(ID, level = 0, pathLevel = 0):
                 # TODO Org-Tansclution: https://org-roam.discourse.group/t/alpha-org-transclusion/830
                 text += f'[[{refPrefix}{parentPath}.org::*{IDtext}][{IDtext}]]'
         elif(item["i"] == "o"):
-            text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "None").title())}\n{item["text"]}\n#+END_SRC'
+            text += f'#+BEGIN_SRC {getOrgLanguage(item.get("language", "None"))}\n{item["text"]}\n#+END_SRC'
         elif(item["i"] == "i" and "url" in item):
             text += f'[[{item["url"]}]]'
         elif(item["i"] == "m"):
@@ -245,17 +285,17 @@ def textFromID(ID, level = 0, pathLevel = 0):
             text += "#DeletedRem: " + "".join(item["textOfDeletedRem"])
         else:
             print("Could not Extract text at textFromID function for ID: " + ID)
+    
+    return text
 
-    if level == 0:
-        # level is used to disable recursive expansion, since tags don't need to be recursive
-        if ((len(dict.get("typeParents", []))>0) 
-        and not ID in allDocID 
-        and not(dict.get("forceIsFolder", False))):
-            text += convertTags(dict)
-    
-    if text.startswith("#+BEGIN_SRC"):
-        text = text.replace("\r\n", "\n")
-    
+
+
+def replaceRemID(text):
+    text = re.sub(re_remID, ' #', text)
+    text = text.replace("]]", "")
+    text = text.replace("/", "") # replace "/" if added in parentFromID() function
+    text = text.strip()
+
     return text
 
 
@@ -339,9 +379,14 @@ def getFilePath(ID):
     return pathList
 
 def getOrgLanguage(lang):
-    langJsonPath = os.path.join(dir_path, "orgLanguages.json")
+    lang = lang.lower()
     langList = json.load(open(langJsonPath, mode="rt", encoding="utf-8", errors="ignore"))
-    identifier = langList[lang]
+    try:
+        identifier = langList[lang]
+    except Exception as e:
+        identifier = langList[lang]
+        print(e)
+        print("cannot find org-language(syntax-highlight) for: " + lang)
 
     return identifier
 

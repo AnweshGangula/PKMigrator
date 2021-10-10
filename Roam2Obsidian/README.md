@@ -1,6 +1,6 @@
 # Roam JSON To Obsidian Converter
 
-This is a forked repository from [renerocksai/rj2obs](https://github.com/renerocksai/rj2obs) with few more **additional features**:
+This folder is a forked repository from [renerocksai/rj2obs](https://github.com/renerocksai/rj2obs) with few more **additional features**:
 
 * Convert code-blocks into proper markdown code-blocks
 * Enclose any html tags in backtics so that they are not rendered by obsidian - eg: `` `<br>` ``
