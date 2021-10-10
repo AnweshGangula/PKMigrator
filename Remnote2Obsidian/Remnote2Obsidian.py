@@ -25,6 +25,7 @@ delimiterSR = " -- " # Spaced Repetition Delimiter
 
 re_HTML = re.compile("(?<!`)<(?!\s|-).+?>(?!`)")
 re_newLine = re.compile("(\\n){3,}") # replace more than 2 newlines with only 2: https://regex101.com/r/9VAqaO/1/
+re_remID = re.compile(r'\[\[')
 # ---------------------------------------------------------------
 pbr=""
 if previewBlockRef:
@@ -110,6 +111,7 @@ def createFile(remID, remFolderPath):
 
     textSplit = remText.split(delimiterSR)
     filename = textSplit[0]
+    filename = replaceRemID(filename)
     fileDesc = ""
     if len(textSplit)>1:
         fileDesc = "\nFile Description: " + textSplit[1]
@@ -275,6 +277,16 @@ def arrayToText(array, ID):
             print("Could not Extract text at textFromID function for ID: " + ID)
 
     return text
+
+
+def replaceRemID(text):
+    text = re.sub(re_remID, ' #', text)
+    text = text.replace("]]", "")
+    text = text.replace("/", "") # replace "/" if added in parentFromID() function
+    text = text.strip()
+
+    return text
+
 
 def convertTags(dict):
     text = ""
