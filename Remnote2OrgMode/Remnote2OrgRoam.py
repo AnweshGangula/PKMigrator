@@ -107,14 +107,19 @@ def createFile(remID, remFolderPath, pathLevel=0):
         return
     remText = textFromID(remID)
     remDict = dictFromID(remID)
+
+    textSplit = remText.split(delimiterSR)
+    filename = textSplit[0]
+    fileDesc = ""
+    if len(textSplit)>1:
+        fileDesc = "\nFile Description: " + textSplit[1]
+    
     if remDict.get("forceIsFolder", False):
-            newFilePath = os.path.join(remFolderPath, remText)
-            for child in remDict["children"]:
-                createFile(child, newFilePath, pathLevel + 1)
+        newFilePath = os.path.join(remFolderPath, filename)
+        for child in remDict["children"]:
+            createFile(child, newFilePath, pathLevel + 1)
     else:
         os.makedirs(remFolderPath, exist_ok=True)
-        filename = re.sub(r'\[.*\[|\]\]', '', remText).strip()
-        filename = filename.split(delimiterSR)[0]
         fileTitle = filename
         # filename = re.sub('[^\w\-_\. ]', '_', filename)
         if(os.path.basename(remFolderPath) == dailyDocsFolder):
@@ -136,8 +141,8 @@ def createFile(remID, remFolderPath, pathLevel=0):
                 #     raise ValueError(filename + '.org File doesnt have any content')
                 expandBullets = "\n".join(child)
 
-                f.write(fileMetadata + fileTitle + "\n\n" + expandBullets)
-            # print(f'{remText}.org created')
+                f.write(fileMetadata + fileTitle + fileDesc + "\n\n" + expandBullets)
+            # print(f'{filename}.org created')
             created.append("ID: " + remID + ",  Name: " + filename)
         except Exception as e:
             # print(e)
