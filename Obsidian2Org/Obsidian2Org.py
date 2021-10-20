@@ -1,45 +1,50 @@
+# terminal code: "cd Obsidian2Org & python obsidian-to-org.py"
+
 #!/usr/bin/python
 
 import sys,re,os
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
-if not os.path.isdir("out/"):
-    os.mkdir("out/")
+# if not os.path.isdir("out/"):
+#     os.mkdir("out/")
 
+# md_file = r"./Rem2Obs/Applications_Tools.md"
 md_file = sys.argv[1]
+md_file = os.path.join(dir_path, md_file)
+
 org_file = md_file[:-3] + ".org"
 
 def replace(pattern, substitution, filename):
-    f = open(filename, "r+")
-    content = f.read()
-    content = re.sub(pattern, substitution, content)
-    f.seek(0)
-    f.write(content)
-    f.truncate()
-    f.close()
+    with open(filename, mode="r+", encoding="utf-8") as f:
+        content = f.read()
+        content = re.sub(pattern, substitution, content)
+        f.seek(0)
+        f.write(content)
+        f.truncate()
 
-# Treat all comments in file
-re_comm = re.compile(r"^%%(.*?)%%", re.MULTILINE)
-replace(re_comm, r"#!#comment: \1", md_file)
 
-# Ensure space after "---"
-re_ruler = re.compile(r"^---\n(.+)", re.MULTILINE)
-replace(re_ruler, r"---\n\n\1", md_file)
+# # Treat all comments in file
+# re_comm = re.compile(r"^%%(.*?)%%", re.MULTILINE)
+# replace(re_comm, r"#!#comment: \1", md_file)
+
+# # Ensure space after "---"
+# re_ruler = re.compile(r"^---\n(.+)", re.MULTILINE)
+# replace(re_ruler, r"---\n\n\1", md_file)
 
 # Convert from md to org
-pandoc_command = 'pandoc -f markdown "{0}" --lua-filter=remove-header-attr.lua'\
-                 ' --wrap=preserve -o out/"{1}"'.format(md_file,org_file)
+pandoc_command = 'pandoc -f markdown "{0}" --wrap=preserve -o "{1}"'.format(md_file, org_file)
 os.system(pandoc_command)
 
-# Regularize comments
-re_comm_org = re.compile(r"^#!#comment:(.*?)$", re.MULTILINE)
-replace(re_comm_org, r"#\1", "out/" + org_file)
+# # Regularize comments
+# re_comm_org = re.compile(r"^#!#comment:(.*?)$", re.MULTILINE)
+# replace(re_comm_org, r"#\1",  org_file)
 
 # Convert all kinds of links
 re_url = re.compile(r"\[\[(.*?)\]\[(.*?)\]\]")
 re_link = re.compile(r"\[\[(.*?)\]\]")
 re_link_description = re.compile(r"\[\[(.*?)\|(.*?)\]\]")
 
-with open("out/" + org_file, "r+") as f:
+with open(org_file,  mode="r+", encoding="utf-8") as f:
     content = f.read()
     new_content = ""
     matches = re.finditer(r"\[\[.*?\]\]", content)
