@@ -93,8 +93,8 @@ def main():
         i += 1
         if ignoreRem(dict["_id"]):
             continue
-        printProgressBar(i, len(allParentRem), prefix = 'Progress:', suffix = 'Complete', length = 50)
         createFile(dict["_id"], Rem2ObsPath)
+        printProgressBar(i, len(allParentRem), prefix = 'Progress:', suffix = 'Complete', length = 50)
 
     timetaken = str(datetime.datetime.now() - start_time)
     print(f"\nTime Taken to Generate '{OrgRootFolder}' Org-Mode Folder: {timetaken}")
@@ -182,8 +182,8 @@ def expandChildren(ID, level=0, pathLevel = 0):
                 prefix = "*" * level
             prefix += "* "
             blankPrefix = prefix.replace("*", " ")
-            if text.startswith("#+BEGIN_SRC"):
-                prefix = blankPrefix
+            # if text.startswith("#+BEGIN_SRC"): # not necessary - this is removing bullet in first line of code-block
+            #     prefix = blankPrefix
             text = prefix + text
             if "references" in x and x["references"] != []:
                 orgRoamData = ['', ':PROPERTIES:', f':ID:       {ChildID}', ':END:', '']
@@ -212,7 +212,6 @@ def dictFromID(ID):
 def textFromID(ID, level = 0, pathLevel = 0):
     dict = dictFromID(ID)
     key = dict["key"]
-    value = dict.get("value", [])
     text = ""
 
     todoStatus = getTODO(dict)
@@ -223,8 +222,9 @@ def textFromID(ID, level = 0, pathLevel = 0):
 
     text += arrayToText(key, ID, pathLevel = pathLevel)
     
-    if value and len(value) > 0:
-        text += delimiterSR + arrayToText(value, ID, pathLevel = pathLevel)
+    # value = dict.get("value", [])
+    # if value and len(value) > 0:
+    #     text += delimiterSR + arrayToText(value, ID, pathLevel = pathLevel)
 
     if level == 0:
         # level is used to disable recursive expansion, since tags don't need to be recursive
@@ -235,6 +235,7 @@ def textFromID(ID, level = 0, pathLevel = 0):
     
     if text.startswith("#+BEGIN_SRC"):
         text = text.replace("\r\n", "\n")
+        # in Windows - "\r\n" means end of line - https://stackoverflow.com/a/1761086/6908282
     
     return text
 
@@ -275,11 +276,12 @@ def arrayToText(array, ID, pathLevel = 0):
             elif(item.get("q", False)):
                 text += f'~{currText}~'
             elif(item.get("x", False)):
-                text = f'$${currText}$$'
+                text += f'$${currText}$$'
             elif(item.get("b", False)):
-                text += f'*{currText}*'
                 if(item.get("h", False)):
-                    text = textHighlight(text, item["h"], html = highlightToHTML) # note that we used "text =" not "text +="
+                    text = textHighlight(currText, item["h"], html = highlightToHTML)
+                else:
+                    text += f'*{currText}*'
             elif(item.get("h", False)):
                 text += textHighlight(currText, item["h"], html = highlightToHTML)
             elif(item.get("u", False)):

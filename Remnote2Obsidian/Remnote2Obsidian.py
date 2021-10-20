@@ -19,6 +19,7 @@ RemLanguages = "../Data/RemLanguages.json"
 langJsonPath = os.path.join(dir_path, RemLanguages)
 vaultName = "Rem2Obs"
 dailyDocsFolder = "Daily Documents"
+indent = "\t" # "    " # choose how are lines indented (tab vs 4spaces)
 highlightToHTML = True # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 previewBlockRef = True
 delimiterSR = " -- " # Spaced Repetition Delimiter
@@ -93,8 +94,8 @@ def main():
         i += 1
         if ignoreRem(dict["_id"]):
             continue
-        printProgressBar(i, len(allParentRem), prefix = 'Progress:', suffix = 'Complete', length = 50)
         createFile(dict["_id"], Rem2ObsPath)
+        printProgressBar(i, len(allParentRem), prefix = 'Progress:', suffix = 'Complete', length = 50)
 
     timetaken = str(datetime.datetime.now() - start_time)
     print(f"\nTime Taken to Generate '{vaultName}' Obsidian Vault: {timetaken}")
@@ -165,32 +166,32 @@ def ignoreRem(ID):
 
 
 def expandChildren(ID, level=0):
-    childID = [x["children"] for x in RemnoteDocs if x["_id"] == ID][0]
+    childIDList = [x["children"] for x in RemnoteDocs if x["_id"] == ID][0]
     filteredChildren = []
     text = ""
 
-    childData = [x for x in RemnoteDocs if x["_id"] in childID]
+    childData = [x for x in RemnoteDocs if x["_id"] in childIDList]
     for x in childData:
-        ChildID = x["_id"]
-        if not ignoreRem(ChildID):
-            text = textFromID(ChildID)
+        childID = x["_id"]
+        if not ignoreRem(childID):
+            text = textFromID(childID)
             prefix = ""
             if level >= 1:
-                prefix = "    " * level
+                prefix = indent * level
             prefix += "- "
-            blankPrefix = prefix.replace("-", " ")
-            if text.startswith("```"):
-                prefix = blankPrefix
+            blankPrefix = prefix.replace("- ", indent)
+            # if text.startswith("```"): # not necessary - this is removing bullet in first line of code-block
+            #     prefix = blankPrefix
             text = prefix + text
             if "references" in x and x["references"] != []:
-                text += f' ^{ChildID.replace("_", "-")}'
+                text += f' ^{childID.replace("_", "-")}'
             if "\n" in text:
                 text = text.replace("\r", "\n")
                 text = re.sub(re_newLine, r"\n\n", text)
                 text = text.replace("\n", "\n" + blankPrefix)
             filteredChildren.append(text)
 
-            filteredChildren.extend(expandChildren(ChildID, level = level + 1 ))
+            filteredChildren.extend(expandChildren(childID, level = level + 1 ))
 
     return filteredChildren
 
@@ -206,10 +207,11 @@ def dictFromID(ID):
     return dict
 
 def textFromID(ID, level = 0):
+    text = ""
+    if ignoreRem(ID):
+        return text
     dict = dictFromID(ID)
     key = dict["key"]
-    value = dict.get("value", [])
-    text = ""
 
     todoStatus = getTODO(dict)
     if todoStatus == "Finished":
@@ -219,8 +221,9 @@ def textFromID(ID, level = 0):
 
     text += arrayToText(key, ID)
 
-    if value and len(value) > 0:
-        text += delimiterSR + arrayToText(value, ID)
+    # value = dict.get("value", [])
+    # if value and len(value) > 0:
+    #     text += delimiterSR + arrayToText(value, ID)
     if level == 0:
         # level is used to disable recursive expansion, since tags don't need to be recursive
         if ((len(dict.get("typeParents", []))>0) 
@@ -230,6 +233,7 @@ def textFromID(ID, level = 0):
     
     if text.startswith("```"):
         text = text.replace("\r\n", "\n")
+        # in Windows - "\r\n" means end of line - https://stackoverflow.com/a/1761086/6908282
     
     return text
 
@@ -249,7 +253,7 @@ def arrayToText(array, ID):
             else:
                 text += f'{pbr}[[{parentPath}#^{newID}]]'
         elif(item["i"] == "o"):
-            text += f'```{getOrgLanguage(item.get("language", "None"))}\n{item["text"]}\n  ```'
+            text += f'```{getOrgLanguage(item.get("language", "None"))}\n{item["text"]}\n```'
         elif(item["i"] == "i" and "url" in item):
             text += f'![]({item["url"]})'
         elif(item["i"] == "m"):
@@ -262,11 +266,12 @@ def arrayToText(array, ID):
             elif(item.get("q", False)):
                 text += f'`{currText}`'
             elif(item.get("x", False)):
-                text = f'$${currText}$$'
+                text += f'$${currText}$$'
             elif(item.get("b", False)):
-                text += f'**{currText}**'
                 if(item.get("h", False)):
-                    text = textHighlight(text, item["h"], html = highlightToHTML) # note that we used "text =" not "text +="
+                    text += textHighlight(currText, item["h"], html = highlightToHTML)
+                else:
+                    text += f'**{currText}**'
             elif(item.get("h", False)):
                 text += textHighlight(currText, item["h"], html = highlightToHTML)
             elif(item.get("u", False)):
@@ -347,6 +352,8 @@ def fence_HTMLtags(string):
 
 def parentFromID(ID):
     fileName = ""
+    if ignoreRem(ID):
+        return fileName
     dict = dictFromID(ID)
     if(ID in allDocID):
         filePath = getFilePath(ID)
