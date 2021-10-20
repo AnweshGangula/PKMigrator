@@ -19,7 +19,7 @@ RemLanguages = "../Data/RemLanguages.json"
 langJsonPath = os.path.join(dir_path, RemLanguages)
 vaultName = "Rem2Obs"
 dailyDocsFolder = "Daily Documents"
-indent = "\t" # "    " # choose how are lines indented (tab vs 4spaces)
+indent = "\t" # "    " # choose how are lines indented (tab ("\t") vs 4spaces("    ")) --> https://forum.obsidian.md/t/meta-post-common-css-hacks/1978/509?u=gangula
 highlightToHTML = True # if False: Highlights will be '==sampleText==', if True '<mark style=" background-color: {color}; ">{text}</mark>'
 previewBlockRef = True
 delimiterSR = " -- " # Spaced Repetition Delimiter
