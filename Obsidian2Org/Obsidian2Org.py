@@ -1,4 +1,5 @@
-# terminal code: "cd Obsidian2Org & python obsidian-to-org.py"
+# terminal code: "cd Obsidian2Org & python Obsidian2Org.py"
+# reference: https://gist.github.com/rberaldo/2a3bd82d5ed4bc39fee7e8ff4a6242b2
 
 #!/usr/bin/python
 
@@ -8,19 +9,19 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 # if not os.path.isdir("out/"):
 #     os.mkdir("out/")
 
-# md_file = r"./Rem2Obs/Applications_Tools.md"
 md_file = sys.argv[1]
+# md_file = r"./Rem2Obs/Applications_Tools.md"
 md_file = os.path.join(dir_path, md_file)
 
 org_file = md_file[:-3] + ".org"
 
-def replace(pattern, substitution, filename):
-    with open(filename, mode="r+", encoding="utf-8") as f:
-        content = f.read()
-        content = re.sub(pattern, substitution, content)
-        f.seek(0)
-        f.write(content)
-        f.truncate()
+# def replace(pattern, substitution, filename):
+#     with open(filename, mode="r+", encoding="utf-8") as f:
+#         content = f.read()
+#         content = re.sub(pattern, substitution, content)
+#         f.seek(0)
+#         f.write(content)
+#         f.truncate()
 
 
 # # Treat all comments in file
@@ -32,7 +33,7 @@ def replace(pattern, substitution, filename):
 # replace(re_ruler, r"---\n\n\1", md_file)
 
 # Convert from md to org
-pandoc_command = 'pandoc -f markdown "{0}" --wrap=preserve -o "{1}"'.format(md_file, org_file)
+pandoc_command = f'pandoc -f markdown {md_file} --wrap=preserve -o {org_file}'
 os.system(pandoc_command)
 
 # # Regularize comments

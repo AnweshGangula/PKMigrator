@@ -10,7 +10,7 @@
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",
-      "args": ["./Rem2Obs/Applications_Tools.md"]
+      "args": ["Rem2Obs/Applications & Tools.md"]
     }
   ]
 }
