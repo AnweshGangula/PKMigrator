@@ -47,6 +47,7 @@ ___
 ## General Observations
 
 * If Rem's are created separately for each Block Ref, they follow this pattern!! - `"i": "q"` or `"rcrp":`
+    TODO: `"i": "q"` with `"_id":` needs to be re-evalated with new export
     ```JSON
     "key": [
         {
@@ -111,8 +112,9 @@ ___
 * Object with `"i": "m"` and `"b": true` as a property in `key` are bold text
 * Object with `"i": "m"` and `"x": true` as a property in `key` are LaTeX text
 * Object with `"i": "m"` and `"q": true` as a property in `key` are inline code
-* Object with `"i": "m"` and `"u": true` as a property in `key` are emptry text (typically appear before underscore(_))
-* Object with `"i": "m"` and `"url": ` as a property in `key` are URL links
+* Object with `"i": "m"` and `"u": true` as a property in `key` are empty text (typically appear before underscore(_))
+* Object with `"i": "m"` and `"qId": ` as a property in `key` are URL links
+    - `"i": "q"` and `"content": false` are URL links which are rem references (Remnote v1.5 - [new weblinks](https://www.remnote.io/p/help/document/BfxJy8oi5CCn2t69Z))
 * Object with `"i": "m"` and `"h": ` as a property in `key` are Highlighted Text
 * Object with `"references": [\n` has been referenced in other blocks
 * crt object of a object has metadata of REM - like Heading, color etc... `"crt": {`

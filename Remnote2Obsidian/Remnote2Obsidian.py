@@ -97,6 +97,7 @@ notCreated = []
 
 
 def main():
+    print("Conversion started at: " + str(start_time))
     printProgressBar(
         0, len(allParentRem), prefix="Progress:", suffix="Complete", length=50
     )
@@ -273,6 +274,19 @@ def arrayToText(array, ID):
             parentPath = parentFromID(newID)
             if newID in allDocID:
                 text += f"[[{parentPath}]]"
+            elif (
+                "crt" in newDict
+                and newDict["crt"] != None
+                and "b" in newDict["crt"]
+                and "u" in newDict["crt"]["b"]
+            ):
+                if "t" in newDict["crt"]["b"]:
+                    # if title doesn't exist in "crt" then get from "key"
+                    urlTitle = newDict["crt"]["b"]["t"]["s"]
+                else:
+                    urlTitle = newDict["key"][0]
+
+                text += f'[{urlTitle.strip()}]({newDict["crt"]["b"]["u"]["s"]})'
             else:
                 text += f"{pbr}[[{parentPath}#^{newID}]]"
         elif item["i"] == "o":
@@ -282,8 +296,12 @@ def arrayToText(array, ID):
         elif item["i"] == "m":
             currText = item["text"]
             currText = fence_HTMLtags(currText)
-            if "url" in item:
-                text += f'[{currText.strip()}]({item["url"]})'
+            if "qId" in item:
+                newDict = dictFromID(item["qId"])
+                if "b" in newDict["crt"]:
+                    text += f'[{currText.strip()}]({newDict["crt"]["b"]["u"]["s"]})'
+                else:
+                    text += newDict["key"][0]
             elif currText.strip() == "":
                 text += currText
             elif item.get("q", False):
