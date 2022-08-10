@@ -1,6 +1,7 @@
 # terminal code: "cd Remnote2Obsidian && python Remnote2Obsidian.py"
 
 # print("Python execution started")
+from collections.abc import Mapping
 import sys, os, json, datetime, re
 
 # Import modules from current project:
@@ -64,14 +65,22 @@ for x in RemnoteDocs:
 
 def getAllDocs(RemList):
     IDlist = []
+
     for rem in RemList:
+        # Skip blank rem links
+        if not isinstance(rem, Mapping):
+            continue
+
         if rem.get("forceIsFolder", False):
             childRem = []
             for child in rem["children"]:
-                dict = [x for x in RemnoteDocs if x["_id"] == child][0] 
-                childRem.append(dict)
+                dict_search = [x for x in RemnoteDocs if x["_id"] == child]
+                
+                if dict_search:
+                    dict = [0] 
+                    childRem.append(dict)
             IDlist.extend(getAllDocs(childRem))
-        if(len(rem["children"])>0
+        if("children" in rem and len(rem["children"])>0
         or (len(rem.get("portalsIn", []))>0)
         or (len(rem.get("references", []))>0)
         or (len(rem.get("typeChildren", []))>0)):
