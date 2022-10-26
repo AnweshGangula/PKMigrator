@@ -1,4 +1,4 @@
-# terminal code: "cd Remnote2Obsidian && python Remnote2Obsidian.py"
+# terminal code: "cd Remnote2Org && python Remnote2OrgMode.py"
 
 # print("Python execution started")
 import sys, os, json, datetime, re
@@ -303,9 +303,9 @@ def replaceRemID(text):
 
 def convertTags(dict):
     text = ""
-    for x in dict["typeParents"]:
-        if not ignoreRem(x):
-            textExtract = textFromID(x, level = 1).strip()
+    for id in dict["typeParents"]:
+        if not ignoreRem(id):
+            textExtract = textFromID(id, level = 1).strip()
             textExtract = re.sub(r'[^A-Za-z0-9-]+', '_', textExtract)
             text += f' [[file:{textExtract}.org][{textExtract}]]'
         
