@@ -55,7 +55,7 @@ pefile==2021.9.3
 Pillow==9.0.1
 platformdirs==2.4.0
 promnesia==1.0.20220515
-protobuf==3.19.4
+protobuf==3.19.5
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pyinstaller==4.9
