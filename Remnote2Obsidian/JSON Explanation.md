@@ -75,7 +75,8 @@ ___
                 " , but it is mostly used by  Linux users"
             ]
         ```
-
+* Objects with `"type": 6` are "Backlink References" i.e., find Reference portals
+    * they can be ignored
 * Objects with blank array of key property can be ignored - `"key":[]`
 * Any object containing `"rcre":` or `"rcrt": ` or `"rcrs": ` can be ignored - they are [Power-up Rems](https://www.redgregory.com/remnote-content/2020/11/1/a-list-of-remnotes-power-up-rems-and-what-they-do).
     * RegEx to find them: `\{((.|\n)*?"rcre")((.|\n)*?\})`
@@ -105,9 +106,19 @@ ___
                         "language": "
     ```
 * Object with `"n": 1` as a property are Top-level Rem's
+* To identify objects that are files, you can use the id of the REM that has `"rcrt": "f"` and look for that id in the following object (in below example `epgYACS8gGPridF2g` is the id of `File` SuperTag)
+    ```
+                "tp": {
+                "epgYACS8gGPridF2g": {
+                    "t": true,
+                    ",u": 1657194232786
+                },
+    ```
 * Object with `"forceIsFolder": true` as a property are folders. 
     * objects with `"parent": null` and `"forceIsFolder": true` can be used for initiation loop.
 * Object with `"i": "i"` as a property in `key` are images
+    * you can use the `url` to property to get the image url
+    * ERROR: note that there can be some images without any `url` property - handle them accordingly
 * Object with `"i": "m"` and `"b": true` as a property in `key` are bold text
 * Object with `"i": "m"` and `"x": true` as a property in `key` are LaTeX text
 * Object with `"i": "m"` and `"q": true` as a property in `key` are inline code
@@ -117,7 +128,8 @@ ___
 * Object with `"references": [\n` has been referenced in other blocks
 * crt object of a object has metadata of REM - like Heading, color etc... `"crt": {`
 * Object with non empty `""typeParents": [` have hashtags in them
-
+* Object with `"i": "p"` as a rem's added by plugin
+    * ERROR: they could be empty - Handle them accordingly
 * `typeParents: ` property is a list of Tags added to the REM
 
 # Power Query function to extract Text-From-Key

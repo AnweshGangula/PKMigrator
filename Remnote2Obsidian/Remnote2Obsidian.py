@@ -67,11 +67,11 @@ def getAllDocs(RemList):
     for rem in RemList:
         if rem.get("forceIsFolder", False):
             childRem = []
-            for child in rem["children"]:
+            for child in rem["ch"]:
                 dict = [x for x in RemnoteDocs if x["_id"] == child][0] 
                 childRem.append(dict)
             IDlist.extend(getAllDocs(childRem))
-        if(len(rem["children"])>0
+        if(len(rem.get("ch", []))>0
         or (len(rem.get("portalsIn", []))>0)
         or (len(rem.get("references", []))>0)
         or (len(rem.get("typeChildren", []))>0)):
@@ -119,7 +119,7 @@ def createFile(remID, remFolderPath):
     
     if remDict.get("forceIsFolder", False):
         newFilePath = os.path.join(remFolderPath, filename)
-        for child in remDict["children"]:
+        for child in remDict["ch"]:
             createFile(child, newFilePath)
     else:
         os.makedirs(remFolderPath, exist_ok=True)
@@ -166,7 +166,7 @@ def ignoreRem(ID):
 
 
 def expandChildren(ID, level=0):
-    childIDList = [x["children"] for x in RemnoteDocs if x["_id"] == ID][0]
+    childIDList = [x["ch"] for x in RemnoteDocs if x["_id"] == ID][0]
     filteredChildren = []
     text = ""
 
