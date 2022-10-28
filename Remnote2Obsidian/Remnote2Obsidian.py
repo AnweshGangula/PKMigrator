@@ -66,6 +66,11 @@ for x in RemnoteDocs:
     #         topFolders.append(x)
 
 
+def getFileRemID():
+    fileRem = [x for x in RemnoteDocs if x.get("rcrt", "") == "f"][0]
+    return fileRem["_id"]
+
+
 def getAllDocs(RemList):
     IDlist = []
     for rem in RemList:
@@ -170,6 +175,7 @@ def createFile(remID, remFolderPath):
 def ignoreRem(ID):
     # TODO: add more ignore ID's
     dict = dictFromID(ID)
+    fileRemId = getFileRemID()
     if (
         dict == []
         or dict["key"] == []
@@ -178,6 +184,10 @@ def ignoreRem(ID):
         or ("rcrs" in dict)
         or ("rcrt" in dict and dict.get("rcrt") != "c" and dict.get("rcrt") != "d")
         or (dict.get("type", False) == 6)
+        or (
+            fileRemId in dict.get("tp", {})
+            # ignore if the REM is a "File", i.e .odf or .docs etc...
+        )
     ):
         return True
     else:
