@@ -9,7 +9,7 @@ boto3==1.21.28
 botocore==1.24.28
 cachetools==5.0.0
 cachew==0.10.0
-certifi==2021.10.8
+certifi==2022.12.7
 charset-normalizer==2.0.12
 click==8.0.3
 colorama==0.4.4
